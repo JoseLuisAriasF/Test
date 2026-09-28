@@ -1,0 +1,9 @@
+---
+import Base from '../../layouts/Base.astro';
+import GameCard from '../../components/GameCard.astro';
+import { games } from '../../lib/data.js';
+---
+<Base title="All Roblox Games: Guides, Tips & Tricks" description={`Guides, tips, tricks, badges and game passes for ${games.length} popular Roblox games.`}>
+  <section class="hero"><h1>All Roblox game guides</h1><p>{games.length} games with tips, tricks, badges, game passes and update history.</p></section>
+  <div class="grid">{games.map((g) => <GameCard g={g} href={`/games/${g.slug}/`} />)}</div>
+</Base>

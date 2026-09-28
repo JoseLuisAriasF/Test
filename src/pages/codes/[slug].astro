@@ -1,0 +1,102 @@
+---
+import Base from '../../layouts/Base.astro';
+import GameHeader from '../../components/GameHeader.astro';
+import Side from '../../components/Side.astro';
+import { games, monthYear, date, isNew, updatedAt } from '../../lib/data.js';
+
+export const getStaticPaths = () => games.map((g) => ({ params: { slug: g.slug }, props: { g } }));
+const { g } = Astro.props;
+const { active, expired } = g.codes;
+const n = active.length;
+const faq = [
+  { q: `What are the newest ${g.title} codes?`, a: n ? `The newest codes are ${active.slice(0, 3).map((c) => `${c.code} (${c.reward})`).join(', ')}.` : `There are no working ${g.title} codes right now. We check for new ones every 2 hours, so bookmark this page.` },
+  { q: `How many ${g.title} codes are active?`, a: `As of ${date(updatedAt)} there ${n === 1 ? 'is 1 active code' : `are ${n} active codes`} and ${expired.length} expired codes.` },
+  { q: `Why is my ${g.title} code not working?`, a: 'Codes are usually case-sensitive, so copy them exactly (use our copy button). Some codes need a minimum level, only work once per account, or have expired - check the expired list below.' },
+  { q: `When do new ${g.title} codes come out?`, a: `New codes usually drop with updates, events and like milestones. The last ${g.title} update was on ${date(g.updated)}.` },
+];
+const schema = [
+  { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
+  { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [['Home', '/'], ['Codes', '/codes/'], [`${g.title} Codes`, `/codes/${g.slug}/`]].map(([name, p], i) => ({ '@type': 'ListItem', position: i + 1, name, item: new URL(p, Astro.site).href })) },
+];
+---
+<Base
+  title={`${g.title} Codes (${monthYear}) - ${n ? `${n} Working Codes` : 'Latest Codes'}`}
+  description={n ? `All ${n} working ${g.title} codes for ${monthYear}: ${active.slice(0, 3).map((c) => c.code).join(', ')} and more. Get free ${active[0].reward.toLowerCase()} and see how to redeem them.` : `Latest ${g.title} codes for ${monthYear}, checked every 2 hours. How to redeem, expired codes and tips.`}
+  image={g.thumbs[0] ?? g.icon}
+  schema={schema}
+>
+  <GameHeader g={g} page="codes" h1={`${g.title} Codes (${monthYear})`} sub={`Checked ${date(updatedAt)} · ${n} active · ${expired.length} expired`} />
+
+  <div class="layout" style="margin-top:28px">
+    <div style="display:grid;gap:24px;min-width:0">
+      <div class="neu box" id="active">
+        <h2>✅ Working {g.title} codes</h2>
+        {n ? (
+          <div class="rows">
+            {active.map((c) => (
+              <div class="code inset" data-code={c.code}>
+                <div class="grow">
+                  <kbd>{c.code}</kbd> {isNew(c) && <span class="tag green">NEW</span>}
+                  <div class="reward">{c.reward}</div>
+                </div>
+                <button class="btn copy" type="button">Copy</button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p class="muted">There are no active {g.title} codes right now. New codes usually arrive with the next update - we check every 2 hours, so come back soon!</p>
+        )}
+        <p class="small muted" style="margin:14px 0 0">Tap a code to copy it. We mark codes you already copied so you can keep track.</p>
+      </div>
+
+      <div class="neu box prose">
+        <h2>How to redeem {g.title} codes</h2>
+        <ol>
+          <li>Open <a href={`https://www.roblox.com/games/${g.placeId}`} target="_blank" rel="noopener nofollow">{g.title} on Roblox</a> and join a server.</li>
+          <li>Look for a <b>Codes</b>, <b>Shop</b>, <b>Gift</b> or <b>Settings</b> button - usually on the side of the screen or in the menu.</li>
+          <li>Paste a code from the list above into the text box.</li>
+          <li>Press <b>Redeem</b> / <b>Enter</b> and enjoy your free rewards!</li>
+        </ol>
+      </div>
+
+      {expired.length > 0 && (
+        <details class="neu box">
+          <summary>❌ Expired codes ({expired.length})</summary>
+          <p class="small muted">These codes no longer work.</p>
+          <div class="expired">{expired.map((c) => <s>{c}</s>)}</div>
+        </details>
+      )}
+
+      <a class="neu box" href={`/games/${g.slug}/`} style="display:flex;gap:16px;align-items:center">
+        <span style="font-size:2rem">📘</span>
+        <span><b style="color:var(--head)">{g.title} guide: tips, tricks & badges</b><br /><span class="small muted">Beginner guide, all {g.badges.length} badges, game passes and update history →</span></span>
+      </a>
+
+      <div class="faq" style="display:grid;gap:10px">
+        <h2>{g.title} codes FAQ</h2>
+        {faq.map((f, i) => <details class="neu" open={i === 0}><summary>{f.q}</summary><p>{f.a}</p></details>)}
+      </div>
+    </div>
+    <Side g={g} />
+  </div>
+
+  <script>
+    const KEY = 'copied-codes';
+    const read = (): string[] => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; } };
+    const copied = new Set(read());
+    for (const el of document.querySelectorAll<HTMLElement>('[data-code]')) {
+      const code = el.dataset.code!;
+      if (copied.has(code)) el.classList.add('tried');
+      el.addEventListener('click', async () => {
+        const btn = el.querySelector('button')!;
+        try { await navigator.clipboard.writeText(code); } catch {}
+        btn.textContent = 'Copied!';
+        btn.classList.add('done');
+        el.classList.add('tried');
+        copied.add(code);
+        try { localStorage.setItem(KEY, JSON.stringify([...copied].slice(-500))); } catch {}
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1500);
+      });
+    }
+  </script>
+</Base>

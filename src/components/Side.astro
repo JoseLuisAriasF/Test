@@ -1,0 +1,31 @@
+---
+import { fmt, full, related, date } from '../lib/data.js';
+const { g } = Astro.props;
+const h = g.history ?? [];
+const max = Math.max(...h.map((p) => p[1]), 1);
+const pts = h.map((p, i) => `${(i / Math.max(h.length - 1, 1)) * 300},${88 - (p[1] / max) * 80}`).join(' ');
+---
+<aside>
+  <div class="neu box">
+    <h2 style="font-size:1rem">Live players</h2>
+    <p style="margin:6px 0"><span class="num" style="font-size:1.6rem">{full(g.playing)}</span> <span class="small muted">peak {fmt(g.peak)}</span></p>
+    {h.length > 1 && (
+      <svg class="spark" viewBox="0 0 300 90" preserveAspectRatio="none" role="img" aria-label={`Player count trend for ${g.title}`}>
+        <polyline points={`0,90 ${pts} 300,90`} fill="rgba(109,127,240,.15)" stroke="none" />
+        <polyline points={pts} fill="none" stroke="#6d7ff0" stroke-width="2" vector-effect="non-scaling-stroke" />
+      </svg>
+    )}
+    <p class="small muted" style="margin:6px 0 0">By {g.creator}{g.verified && ' ✔'} · Created {date(g.created)} · Max {g.maxPlayers} per server</p>
+  </div>
+  <div class="neu box">
+    <h2 style="font-size:1rem">Players also like</h2>
+    <div class="rows" style="margin-top:12px">
+      {related(g, 6).map((r) => (
+        <a class="row inset" href={`/codes/${r.slug}/`} style="padding:8px">
+          <img src={r.icon} alt="" width="40" height="40" style="width:40px;height:40px" loading="lazy" />
+          <div class="grow"><b style="font-size:14px">{r.title}</b><span class="small muted">{r.codes.active.length} codes · {fmt(r.playing)} playing</span></div>
+        </a>
+      ))}
+    </div>
+  </div>
+</aside>

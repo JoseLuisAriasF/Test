@@ -1,0 +1,51 @@
+name: Update data & deploy
+
+on:
+  schedule:
+    - cron: '7 */2 * * *' # every 2 hours
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write # commit refreshed data
+  models: read # free AI guides via GitHub Models
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm test
+
+      - name: Refresh games, codes, badges, guides
+        if: github.event_name != 'push'
+        run: npm run update
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit data
+        if: github.event_name != 'push'
+        run: |
+          git config user.name "bloxpulse-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add src/data/games.json
+          git diff --cached --quiet || (git commit -m "data: refresh $(date -u +%FT%H:%MZ)" && git push)
+
+      - run: npm run build
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+
+      - name: Deploy to Cloudflare
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

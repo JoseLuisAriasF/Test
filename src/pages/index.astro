@@ -1,0 +1,90 @@
+---
+import Base from '../layouts/Base.astro';
+import GameCard from '../components/GameCard.astro';
+import { top, games, withCodes, genres, fmt, full, monthYear, slugOf, date, SITE_NAME } from '../lib/data.js';
+
+const totalPlaying = top.reduce((s, g) => s + g.playing, 0);
+const totalCodes = games.reduce((s, g) => s + g.codes.active.length, 0);
+const latestCodes = games.flatMap((g) => g.codes.active.filter((c) => c.added).map((c) => ({ ...c, g }))).sort((a, b) => b.added.localeCompare(a.added)).slice(0, 8);
+const recentlyUpdated = [...top].sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 6);
+const schema = [{
+  '@context': 'https://schema.org', '@type': 'ItemList', name: 'Most played Roblox games right now',
+  itemListElement: top.map((g, i) => ({ '@type': 'ListItem', position: i + 1, url: new URL(`/games/${g.slug}/`, Astro.site).href, name: g.title })),
+}];
+---
+<Base
+  title={`Roblox Codes (${monthYear}) & Top 50 Most Played Games Live | ${SITE_NAME}`}
+  description={`${totalCodes} working Roblox codes for the ${top.length} most played games right now: ${top.slice(0, 4).map((g) => g.title).join(', ')} and more. Live player counts, tips, tricks and updates.`}
+  image={top[0]?.thumbs[0]}
+  schema={schema}
+>
+  <section class="hero">
+    <span class="pill"><i class="dot"></i>Live · {full(totalPlaying)} players right now</span>
+    <h1>Every working Roblox code for the games everyone is playing</h1>
+    <p>We track the top {top.length} Roblox games in real time and check new codes, tips, tricks and updates every couple of hours - so you never miss free rewards.</p>
+    <div data-search style="position:relative;max-width:520px;margin:0 auto">
+      <label class="search"><span aria-hidden="true">🔍</span><input type="search" placeholder="Search a game: Blox Fruits, Adopt Me…" aria-label="Search games" /></label>
+      <div class="results neu" hidden></div>
+    </div>
+    <div class="stats">
+      <span><b>{totalCodes}</b> active codes</span>
+      <span><b>{games.length}</b> games tracked</span>
+      <span><b>100%</b> free</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div><h2>🔥 Top {top.length} most played right now</h2><p>Ranked by live concurrent players.</p></div>
+      <a class="more" href="/top/">Live ranking →</a>
+    </div>
+    <div class="grid clip" id="top-grid">
+      {top.map((g, i) => <GameCard g={g} eager={i < 6} />)}
+    </div>
+    <div class="center"><button class="btn primary" id="show-more">Show all {top.length} games ↓</button></div>
+  </section>
+
+  <section hidden={!latestCodes.length}>
+    <div class="sec-head">
+      <div><h2>🎁 Newest codes</h2><p>Freshly found codes. Redeem them before they expire!</p></div>
+      <a class="more" href="/codes/">All codes →</a>
+    </div>
+    <div class="rows">
+      {latestCodes.map((c) => (
+        <a class="row neu" href={`/codes/${c.g.slug}/`}>
+          <img src={c.g.icon} alt="" width="48" height="48" loading="lazy" />
+          <div class="grow"><b>{c.code}</b><span class="small muted">{c.g.title} · {c.reward}</span></div>
+          <span class="tag accent">{date(c.added)}</span>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><div><h2>🛠️ Just updated</h2><p>Games that shipped an update most recently.</p></div></div>
+    <div class="grid">
+      {recentlyUpdated.map((g) => <GameCard g={g} href={`/games/${g.slug}/`} />)}
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><div><h2>Explore by genre</h2></div></div>
+    <div class="chips">
+      {genres.map(([name, list]) => <a href={`/genre/${slugOf(name)}/`}>{name}<small>{list.length}</small></a>)}
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><div><h2>Games with the most codes</h2><p>Stack up free rewards.</p></div></div>
+    <div class="grid">
+      {[...withCodes].sort((a, b) => b.codes.active.length - a.codes.active.length).slice(0, 6).map((g) => <GameCard g={g} />)}
+    </div>
+  </section>
+
+  <script>
+    document.getElementById('show-more')?.addEventListener('click', (e) => {
+      document.getElementById('top-grid')!.classList.remove('clip');
+      (e.currentTarget as HTMLElement).remove();
+    });
+  </script>
+</Base>

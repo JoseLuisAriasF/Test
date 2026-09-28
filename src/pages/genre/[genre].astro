@@ -1,0 +1,11 @@
+---
+import Base from '../../layouts/Base.astro';
+import GameCard from '../../components/GameCard.astro';
+import { genres, slugOf, monthYear } from '../../lib/data.js';
+export const getStaticPaths = () => genres.map(([name, list]) => ({ params: { genre: slugOf(name) }, props: { name, list } }));
+const { name, list } = Astro.props;
+---
+<Base title={`Best ${name} Roblox Games (${monthYear}) & Codes`} description={`The most played ${name} games on Roblox right now: ${list.slice(0, 5).map((g) => g.title).join(', ')}. Codes, tips and guides.`}>
+  <section class="hero"><span class="pill">Genre</span><h1>Best {name} games on Roblox</h1><p>{list.length} popular {name.toLowerCase()} games, ranked by live players.</p></section>
+  <div class="grid">{list.map((g) => <GameCard g={g} />)}</div>
+</Base>

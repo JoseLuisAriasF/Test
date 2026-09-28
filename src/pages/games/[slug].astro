@@ -1,0 +1,133 @@
+---
+import Base from '../../layouts/Base.astro';
+import GameHeader from '../../components/GameHeader.astro';
+import Side from '../../components/Side.astro';
+import { games, monthYear, date, full, fmt, autoTips } from '../../lib/data.js';
+
+export const getStaticPaths = () => games.map((g) => ({ params: { slug: g.slug }, props: { g } }));
+const { g } = Astro.props;
+const guide = g.guide;
+const tips = guide?.tips?.length ? guide.tips : autoTips(g);
+const faq = guide?.faq ?? [];
+const intro = guide?.intro ?? `${g.title} is a ${g.genre.toLowerCase()} Roblox experience by ${g.creator}. It has been visited ${full(g.visits)} times and ${full(g.playing)} people are playing it right now, making it the #${g.rank ?? '–'} most played game on Roblox. ${g.title} was created on ${date(g.created)} and was last updated on ${date(g.updated)}.`;
+const schema = [
+  {
+    '@context': 'https://schema.org', '@type': 'VideoGame', name: g.title, url: new URL(`/games/${g.slug}/`, Astro.site).href,
+    image: g.icon, genre: g.genre, gamePlatform: ['PC', 'Mobile', 'Xbox', 'PlayStation'], applicationCategory: 'Game',
+    author: { '@type': 'Organization', name: g.creator }, datePublished: g.created, dateModified: g.updated,
+    sameAs: `https://www.roblox.com/games/${g.placeId}`,
+  },
+  ...(faq.length ? [{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) }] : []),
+];
+---
+<Base
+  title={`${g.title} Guide (${monthYear}): Tips, Tricks, Badges & Updates`}
+  description={`${g.title} guide for ${monthYear}: ${tips.length} tips & tricks, beginner guide, all ${g.badges.length} badges, ${g.passes.length} game passes with prices and the latest updates. ${fmt(g.playing)} playing now.`}
+  image={g.thumbs[0] ?? g.icon}
+  schema={schema}
+>
+  <GameHeader g={g} page="games" h1={`${g.title} Guide: Tips, Tricks & Updates`} sub={`${g.genre} · by ${g.creator} · updated ${date(g.updated)}`} />
+
+  <nav class="toc" style="margin-top:24px">
+    <a href="#about">About</a><a href="#tips">Tips & tricks</a>
+    {guide?.beginner && <a href="#beginner">Beginner guide</a>}
+    {g.badges.length > 0 && <a href="#badges">Badges</a>}
+    {g.passes.length > 0 && <a href="#passes">Game passes</a>}
+    {g.updates.length > 0 && <a href="#updates">Updates</a>}
+    {faq.length > 0 && <a href="#faq">FAQ</a>}
+  </nav>
+
+  <div class="layout" style="margin-top:12px">
+    <div style="display:grid;gap:24px;min-width:0">
+      <div class="neu box prose" id="about">
+        <h2>What is {g.title}?</h2>
+        {intro.split(/\n+/).map((p) => <p>{p}</p>)}
+        {g.thumbs.length > 0 && <div class="shots">{g.thumbs.map((t, i) => <img src={t} alt={`${g.title} screenshot ${i + 1}`} width="768" height="432" loading="lazy" />)}</div>}
+      </div>
+
+      <div id="tips">
+        <h2 style="margin-bottom:14px">💡 {g.title} tips & tricks</h2>
+        <div class="tips">{tips.map((t) => <div class="neu"><h3>{t.title}</h3><p>{t.text}</p></div>)}</div>
+      </div>
+
+      {guide?.beginner && (
+        <div class="neu box prose" id="beginner">
+          <h2>🚀 Beginner guide</h2>
+          <ol>{guide.beginner.map((s) => <li>{s}</li>)}</ol>
+        </div>
+      )}
+
+      <a class="neu box" href={`/codes/${g.slug}/`} style="display:flex;gap:16px;align-items:center">
+        <span style="font-size:2rem">🎁</span>
+        <span><b style="color:var(--head)">{g.codes.active.length} working {g.title} codes</b><br /><span class="small muted">Free rewards, updated every 2 hours →</span></span>
+      </a>
+
+      {g.badges.length > 0 && (
+        <div class="neu box" id="badges">
+          <h2>🏅 All {g.title} badges ({g.badges.length})</h2>
+          <div class="tbl">
+            <table>
+              <thead><tr><th>Badge</th><th class="r">Owners</th><th class="r">Rarity</th></tr></thead>
+              <tbody>
+                {g.badges.map((b, i) => (
+                  <tr class={i >= 10 ? 'extra' : ''} hidden={i >= 10}>
+                    <td><b style="color:var(--head)">{b.name}</b>{b.desc && <div class="small muted">{b.desc}</div>}</td>
+                    <td class="r num">{fmt(b.awarded)}</td>
+                    <td class="r" style="min-width:90px"><div class="bar"><i style={`width:${Math.max(2, Math.min(100, b.rate * 100))}%`}></i></div><span class="small muted">{(b.rate * 100).toFixed(2)}%</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {g.badges.length > 10 && <div class="center"><button class="btn" data-reveal="badges">Show all {g.badges.length} badges</button></div>}
+        </div>
+      )}
+
+      {g.passes.length > 0 && (
+        <div class="neu box" id="passes">
+          <h2>💎 {g.title} game passes & prices</h2>
+          <div class="tbl">
+            <table>
+              <thead><tr><th>Game pass</th><th class="r">Robux</th></tr></thead>
+              <tbody>
+                {[...g.passes].sort((a, b) => (a.price ?? 0) - (b.price ?? 0)).map((p) => (
+                  <tr><td><a href={`https://www.roblox.com/game-pass/${p.id}`} target="_blank" rel="noopener nofollow"><b style="color:var(--head)">{p.name}</b></a>{p.desc && <div class="small muted">{p.desc}</div>}</td><td class="r num">{p.price ? full(p.price) : '–'}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {g.updates.length > 0 && (
+        <div class="neu box" id="updates">
+          <h2>🛠️ {g.title} update history</h2>
+          <div class="rows">
+            {g.updates.map((u) => <div class="row inset"><span class="tag accent">{date(u.date)}</span><span class="small">{u.headline || 'Game updated'}</span></div>)}
+          </div>
+        </div>
+      )}
+
+      <div class="neu box">
+        <h2>Official description</h2>
+        <div class="desc" id="desc">{g.description}</div>
+        <button class="btn" style="margin-top:12px" onclick="this.previousElementSibling.classList.add('open');this.remove()">Read more</button>
+      </div>
+
+      {faq.length > 0 && (
+        <div class="faq" id="faq" style="display:grid;gap:10px">
+          <h2>{g.title} FAQ</h2>
+          {faq.map((f, i) => <details class="neu" open={i === 0}><summary>{f.q}</summary><p>{f.a}</p></details>)}
+        </div>
+      )}
+    </div>
+    <Side g={g} />
+  </div>
+
+  <script>
+    document.querySelector('[data-reveal]')?.addEventListener('click', (e) => {
+      document.querySelectorAll<HTMLElement>('tr.extra').forEach((r) => (r.hidden = false));
+      (e.currentTarget as HTMLElement).remove();
+    });
+  </script>
+</Base>

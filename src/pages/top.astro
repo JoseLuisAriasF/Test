@@ -1,0 +1,28 @@
+---
+import Base from '../layouts/Base.astro';
+import { top, full, fmt, rating, date, updatedAt, monthYear } from '../lib/data.js';
+---
+<Base title={`Most Played Roblox Games Right Now (${monthYear}) - Live Top ${top.length}`} description={`Live ranking of the ${top.length} most played Roblox games by concurrent players: ${top.slice(0, 5).map((g) => g.title).join(', ')}. Updated every 2 hours.`}>
+  <section class="hero">
+    <span class="pill"><i class="dot"></i>Updated {date(updatedAt)}</span>
+    <h1>Most played Roblox games right now</h1>
+    <p>The top {top.length} Roblox experiences ranked by how many people are playing at this moment.</p>
+  </section>
+  <div class="neu tbl">
+    <table>
+      <thead><tr><th>#</th><th>Game</th><th class="r">Playing</th><th class="r">Visits</th><th class="r">Likes</th><th class="r">Codes</th></tr></thead>
+      <tbody>
+        {top.map((g) => (
+          <tr>
+            <td class="num">{g.rank}</td>
+            <td><a class="tgame" href={`/games/${g.slug}/`}><img src={g.icon} alt="" width="36" height="36" loading="lazy" /><span><b style="color:var(--head)">{g.title}</b><br /><span class="small muted">{g.genre}</span></span></a></td>
+            <td class="r num">{full(g.playing)}</td>
+            <td class="r">{fmt(g.visits)}</td>
+            <td class="r">{rating(g)}%</td>
+            <td class="r"><a class="tag accent" href={`/codes/${g.slug}/`}>{g.codes.active.length}</a></td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</Base>

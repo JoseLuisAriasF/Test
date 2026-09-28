@@ -1,0 +1,12 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE_NAME } from '../lib/data.js';
+---
+<Base title="About" description={`What ${SITE_NAME} is and how we find Roblox codes.`}>
+  <div class="neu box prose" style="max-width:760px;margin:40px auto">
+    <h1>About {SITE_NAME}</h1>
+    <p>{SITE_NAME} tracks the 50 most played Roblox games in real time using public Roblox data. Every 2 hours we check several trusted gaming sites for codes and only list a code as working when most sources agree.</p>
+    <p>Tips and guides are written with the help of AI from each game's official information, and never include exploits, hacks or anything against the Roblox rules.</p>
+    <p>{SITE_NAME} is a fan site and is not affiliated with or endorsed by Roblox Corporation. All game names, icons and screenshots belong to their creators.</p>
+  </div>
+</Base>

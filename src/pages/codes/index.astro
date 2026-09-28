@@ -1,0 +1,23 @@
+---
+import Base from '../../layouts/Base.astro';
+import { games, monthYear, fmt, newCodes } from '../../lib/data.js';
+const list = [...games].sort((a, b) => newCodes(b) - newCodes(a) || b.codes.active.length - a.codes.active.length || b.playing - a.playing);
+const total = games.reduce((s, g) => s + g.codes.active.length, 0);
+---
+<Base title={`All Roblox Codes (${monthYear}) - ${total} Working Codes`} description={`${total} working Roblox game codes for ${monthYear} across ${games.length} popular games. Updated every 2 hours with new and expired codes.`}>
+  <section class="hero">
+    <span class="pill">Updated every 2 hours</span>
+    <h1>All Roblox codes ({monthYear})</h1>
+    <p>{total} working codes for {games.length} games. Games with brand-new codes are listed first.</p>
+  </section>
+  <div class="rows">
+    {list.map((g) => (
+      <a class="row neu" href={`/codes/${g.slug}/`}>
+        <img src={g.icon} alt="" width="48" height="48" loading="lazy" />
+        <div class="grow"><b>{g.title} codes</b><span class="small muted">{g.genre} · {fmt(g.playing)} playing</span></div>
+        {newCodes(g) > 0 && <span class="tag green">{newCodes(g)} NEW</span>}
+        <span class="tag accent">{g.codes.active.length} codes</span>
+      </a>
+    ))}
+  </div>
+</Base>

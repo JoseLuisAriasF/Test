@@ -1,0 +1,28 @@
+---
+import { fmt, rating, date, playUrl, slugOf } from '../lib/data.js';
+const { g, h1, sub, page } = Astro.props;
+---
+<nav class="crumbs"><a href="/">Home</a> › <a href={page === 'codes' ? '/codes/' : '/games/'}>{page === 'codes' ? 'Codes' : 'Games'}</a> › {g.title}</nav>
+<div class="ghead">
+  <img src={g.icon} alt={`${g.title} Roblox icon`} width="180" height="180" />
+  <div>
+    <div class="chips">
+      {g.rank && <span class="pill"><i class="dot"></i>#{g.rank} most played now</span>}
+      <a class="pill" href={`/genre/${slugOf(g.genre)}/`}>{g.genre}</a>
+    </div>
+    <h1>{h1}</h1>
+    <p class="muted" style="margin:0">{sub}</p>
+    <div class="actions">
+      <a class="btn play" href={playUrl(g)} target="_blank" rel="noopener nofollow">▶ Play on Roblox</a>
+      {page === 'codes'
+        ? <a class="btn" href={`/games/${g.slug}/`}>📘 Guide, tips & tricks</a>
+        : <a class="btn primary" href={`/codes/${g.slug}/`}>🎁 {g.codes.active.length} working codes</a>}
+    </div>
+  </div>
+</div>
+<section class="kpis">
+  <div class="neu"><small>Playing now</small><b>{fmt(g.playing)}</b></div>
+  <div class="neu"><small>Total visits</small><b>{fmt(g.visits)}</b></div>
+  <div class="neu"><small>Likes</small><b>{rating(g)}%</b></div>
+  <div class="neu"><small>Last update</small><b style="font-size:1.05rem">{date(g.updated)}</b></div>
+</section>

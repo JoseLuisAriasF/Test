@@ -1,0 +1,77 @@
+---
+import '../styles/global.css';
+import { SITE_NAME } from '../lib/data.js';
+
+const { title, description, image, schema = [], noindex = false } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
+const ld = [{ '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_NAME, url: Astro.site }, ...schema];
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <meta name="theme-color" content="#171b24" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    {image && <meta property="og:image" content={image} />}
+    <meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
+    <link rel="preconnect" href="https://tr.rbxcdn.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+    <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+  </head>
+  <body>
+    <header class="top">
+      <div class="wrap">
+        <a class="logo" href="/"><b>B</b>{SITE_NAME}</a>
+        <nav class="nav">
+          <a href="/codes/">Codes</a>
+          <a href="/top/">Top 50 Live</a>
+          <a href="/games/">All Games</a>
+        </nav>
+        <div class="hsearch" data-search>
+          <label class="search"><span aria-hidden="true">🔍</span><input type="search" placeholder="Search games…" aria-label="Search games" /></label>
+          <div class="results neu" hidden></div>
+        </div>
+      </div>
+    </header>
+    <main class="wrap"><slot /></main>
+    <footer>
+      <div class="wrap">
+        <p>© {new Date().getFullYear()} {SITE_NAME}. Not affiliated with Roblox Corporation. Game data refreshes every 2 hours.</p>
+        <nav><a href="/codes/">All codes</a><a href="/top/">Live ranking</a><a href="/about/">About</a><a href="/privacy/">Privacy</a></nav>
+      </div>
+    </footer>
+    <script>
+      // Global search: lazy-loads a tiny index the first time any search box gets focus.
+      let index: { t: string; s: string; i: string; c: number }[] | null = null;
+      for (const box of document.querySelectorAll<HTMLElement>('[data-search]')) {
+        const input = box.querySelector('input')!;
+        const out = box.querySelector<HTMLElement>('.results')!;
+        input.addEventListener('focus', async () => (index ??= await fetch('/search.json').then((r) => r.json())), { once: true });
+        input.addEventListener('input', () => {
+          const q = input.value.trim().toLowerCase();
+          const hits = q && index ? index.filter((g) => g.t.toLowerCase().includes(q)).slice(0, 8) : [];
+          out.hidden = !hits.length;
+          out.innerHTML = hits
+            .map((g) => `<a href="/codes/${g.s}/"><img src="${g.i}" alt="" loading="lazy"><span>${g.t.replace(/</g, '&lt;')}<br><small class="muted">${g.c} active codes</small></span></a>`)
+            .join('');
+        });
+        input.addEventListener('keydown', (e) => e.key === 'Enter' && out.querySelector('a')?.click());
+        document.addEventListener('click', (e) => !box.contains(e.target as Node) && (out.hidden = true));
+      }
+    </script>
+  </body>
+</html>
