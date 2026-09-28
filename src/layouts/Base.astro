@@ -37,38 +37,49 @@ const ld = [{ '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_N
     <header class="top">
       <div class="wrap">
         <a class="logo" href="/"><b>B</b>{SITE_NAME}</a>
-        <nav class="nav">
-          <a href="/guessr/">🕵️ RoGuessr</a>
-          <a href="/blox-world/">🧱 Blox World</a>
-          <a href="/real-world/">🌍 Real World</a>
-          <a href="/parkour/">🏃 Parkour</a>
-          <a href="/ranking/">🏆 Ranking</a>
-          <a href="/codes/">🎁 Codes</a>
-          <a href="/top/">🔥 Top 50</a>
-          <a href="/trending/">📈 Trending</a>
-          <a href="/play/">🎮 Daily Game</a>
-          <a href="/quiz/">✨ Quiz</a>
+        <nav class="nav" id="nav">
+          <a href="/guessr/" class:list={[{ active: Astro.url.pathname.startsWith('/guessr') }]}>🕵️ RoGuessr</a>
+          <a href="/blox-world/" class:list={[{ active: Astro.url.pathname.startsWith('/blox-world') }]}>🧱 Blox World</a>
+          <a href="/real-world/" class:list={[{ active: Astro.url.pathname.startsWith('/real-world') }]}>🌍 Real World</a>
+          <a href="/parkour/" class:list={[{ active: Astro.url.pathname.startsWith('/parkour') }]}>🏃 Parkour</a>
+          <a href="/codes/" class:list={[{ active: Astro.url.pathname === '/codes/' }]}>🎁 Codes</a>
+          <a href="/top/" class:list={[{ active: Astro.url.pathname.startsWith('/top') }]}>🔥 Top 50</a>
+          <span class="nav-sep"></span>
+          <a href="/ranking/" class:list={['nav-sec', { active: Astro.url.pathname.startsWith('/ranking') }]}>🏆 Ranking</a>
+          <a href="/trending/" class:list={['nav-sec', { active: Astro.url.pathname.startsWith('/trending') }]}>📈 Trending</a>
+          <a href="/play/" class:list={['nav-sec', { active: Astro.url.pathname.startsWith('/play') }]}>🎮 Daily Game</a>
+          <a href="/quiz/" class:list={['nav-sec', { active: Astro.url.pathname.startsWith('/quiz') }]}>✨ Quiz</a>
         </nav>
-        <a class="hunter" href="/codes/" title="Codes you copied" hidden>🏆 <span data-hunter>0</span> codes</a>
         <div class="hsearch" data-search>
           <label class="search"><span aria-hidden="true">🔍</span><input type="search" placeholder="Search games…" aria-label="Search games" /></label>
           <div class="results neu" hidden></div>
         </div>
+        <button class="burger" id="burger" aria-label="Menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
       </div>
     </header>
     <main class="wrap"><slot /></main>
     <footer>
       <div class="wrap">
         <p>© {new Date().getFullYear()} {SITE_NAME}. Not affiliated with Roblox Corporation. Game data refreshes every 2 hours.</p>
-        <nav><a href="/guessr/">RoGuessr</a><a href="/blox-world/">Blox World</a><a href="/real-world/">Real World</a><a href="/parkour/">Parkour</a><a href="/ranking/">Ranking</a><a href="/avatar/">Avatar</a><a href="/codes/">All codes</a><a href="/trending/">Trending</a><a href="/play/">Daily game</a><a href="/quiz/">Quiz</a><a href="/rss.xml">RSS</a><a href="/top/">Live ranking</a><a href="/about/">About</a><a href="/privacy/">Privacy</a></nav>
+        <nav>
+          <a href="/guessr/">RoGuessr</a><a href="/blox-world/">Blox World</a><a href="/real-world/">Real World</a><a href="/parkour/">Parkour</a><a href="/codes/">Codes</a><a href="/top/">Top 50</a><a href="/ranking/">Ranking</a><a href="/trending/">Trending</a><a href="/play/">Daily Game</a><a href="/quiz/">Quiz</a>
+        </nav>
+        <nav><a href="/about/">About</a><a href="/privacy/">Privacy</a><a href="/rss.xml">RSS</a></nav>
       </div>
     </footer>
     <script>
-      // Code Hunter: count of codes this visitor copied (stored only in their browser).
-      try {
-        const n = JSON.parse(localStorage.getItem('copied-codes') || '[]').length;
-        if (n) { document.querySelector('[data-hunter]')!.textContent = String(n); document.querySelector<HTMLElement>('.hunter')!.hidden = false; }
-      } catch {}
+      // Hamburger menu toggle
+      const burger = document.getElementById('burger')!;
+      const nav = document.getElementById('nav')!;
+      burger.addEventListener('click', () => {
+        const open = nav.classList.toggle('open');
+        burger.setAttribute('aria-expanded', String(open));
+      });
+      // Close menu on link click or outside tap
+      nav.addEventListener('click', (e) => { if ((e.target as HTMLElement).tagName === 'A') { nav.classList.remove('open'); burger.setAttribute('aria-expanded', 'false'); } });
+      document.addEventListener('click', (e) => { if (!nav.contains(e.target as Node) && !burger.contains(e.target as Node)) { nav.classList.remove('open'); burger.setAttribute('aria-expanded', 'false'); } });
       // Global search: lazy-loads a tiny index the first time any search box gets focus.
       let index: { t: string; s: string; i: string; c: number }[] | null = null;
       for (const box of document.querySelectorAll<HTMLElement>('[data-search]')) {
