@@ -335,7 +335,10 @@ export class Leaderboard extends DurableObject {
     }
     if (path === '/api/login') {
       let payload;
-      try { payload = await verifyGoogleToken(body.credential, GOOGLE_CLIENT_ID, googleKeys); } catch (e) { return Response.json({ error: `Google sign-in failed: ${e.message}` }, { status: 401 }); }
+      try { payload = await verifyGoogleToken(body.credential, GOOGLE_CLIENT_ID, googleKeys); } catch (e) {
+        console.error('google login rejected:', e.message); // detail stays in the logs, not in the page
+        return Response.json({ error: 'Google sign-in failed. Please try again.' }, { status: 401 });
+      }
       const gid = await hashId(payload.sub);
       let r = this.sql.exec('SELECT * FROM p WHERE gid = ?', gid).toArray()[0];
       if (!r) {
