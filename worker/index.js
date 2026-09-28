@@ -273,7 +273,7 @@ export class Room extends DurableObject {
     for (const w of this.ctx.getWebSockets()) {
       if (w === except) continue;
       const you = w.deserializeAttachment()?.id;
-      try { w.send(JSON.stringify({ type: 'state', phase, seed, cfg, startAt, quick, ranked, live, bot, results, you, host: players[0]?.id, players })); } catch {}
+      try { w.send(JSON.stringify({ type: 'state', now: Date.now(), phase, seed, cfg, startAt, quick, ranked, live, bot, results, you, host: players[0]?.id, players })); } catch {}
     }
   }
 }

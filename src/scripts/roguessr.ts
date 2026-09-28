@@ -411,6 +411,7 @@ function finishBot() {
 }
 
 let pendingCfg: Cfg | null = null;
+let clockOffset = 0; // server clock minus device clock
 const baseTitle = document.title;
 let searchT0 = 0, searchTimer = 0;
 const stopSearch = () => { clearInterval(searchTimer); document.title = baseTitle; $('radar').hidden = true; };
@@ -443,6 +444,8 @@ async function joinRoom(code: string, opts: { quick?: boolean; ranked?: boolean;
       return;
     }
     if (msg.type === 'scored') { score = msg.total; $('score').textContent = score.toLocaleString('en'); return; }
+    // Device clocks can be minutes off: convert server times to this device's clock.
+    if (msg.now) clockOffset = msg.now - Date.now();
     vs = msg;
     onState();
   };
@@ -474,8 +477,9 @@ function onState() {
     roster = new Map(vs.players.map((p: P) => [p.id, p]));
     bot = null;
     $('elo').dataset.done = '';
-    if (vs.bot) startBot(vs.startAt);
-    start('vs', vs.cfg, vs.seed, vs.startAt);
+    const localStart = vs.startAt - clockOffset;
+    if (vs.bot) startBot(localStart);
+    start('vs', vs.cfg, vs.seed, localStart);
     return;
   }
   if (mode === 'vs' && playedSeed) {
