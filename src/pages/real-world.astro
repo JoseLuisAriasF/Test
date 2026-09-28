@@ -1,0 +1,164 @@
+---
+import Base from '../layouts/Base.astro';
+import pool from '../data/realworld.json';
+const places = pool.items.length;
+const regions = new Set(pool.items.map((i) => i.place)).size;
+---
+<Base title="Real World: Free GeoGuessr-Style Game with 360° Street Photos" description={`Look around real 360° street photos, walk down the street and guess where in the world you are. ${places} places in ${regions} regions, free and unlimited, with a daily challenge.`}>
+  <section class="hero" style="padding-bottom:10px">
+    <span class="pill">🌍 New · Real 360° photos</span>
+    <h1><span class="grad">Real World</span>: where on Earth is this?</h1>
+    <p>Look around a real street in 360°, walk down the road for clues, then drop your pin on the world map!</p>
+  </section>
+
+  <div class="rw">
+    <canvas id="rw-canvas" aria-label="360 degree street view"></canvas>
+    <div id="rw-loading" class="rw-loading" hidden><span></span></div>
+
+    <div id="rw-menu" class="bw-panel bw-center" hidden>
+      <div class="bw-card">
+        <span class="bw-logo">🌍</span>
+        <h2>Real World</h2>
+        <p class="muted">{places} places in {regions} regions. 5 rounds, 2 minutes each, 12 steps to walk.</p>
+        <div id="rw-challenge" class="rg-banner" hidden style="margin:10px 0">
+          <span>⚔️ A friend sent you these places. Can you beat them?</span>
+          <button class="btn gold" data-rw-start="challenge" type="button">Play their game</button>
+        </div>
+        <div class="bw-btns">
+          <button class="btn play bw-big" data-rw-start="random" type="button">▶ Play</button>
+          <button class="btn primary" data-rw-start="daily" type="button">📅 Daily challenge</button>
+        </div>
+        <p id="rw-best" class="small" style="color:var(--gold);margin:10px 0 0"></p>
+        <div class="bw-how"><span>Drag to look around</span><span>Scroll or pinch to zoom</span><span>⬆ ⬇ walk the street</span><span>🗺️ pin your guess</span></div>
+      </div>
+    </div>
+
+    <div id="rw-hud" hidden>
+      <div class="bw-top">
+        <div class="bw-chip"><b id="rw-round"></b><span id="rw-seed" class="small muted"></span></div>
+        <div class="bw-compass" aria-hidden="true"><span id="rw-needle">▲</span><small>N</small></div>
+        <div class="bw-chip bw-right">
+          <svg class="bw-timer" viewBox="0 0 36 36" aria-hidden="true"><circle r="15.9" cx="18" cy="18" /><circle id="rw-ring" r="15.9" cx="18" cy="18" /></svg>
+          <span id="rw-time" class="bw-time"></span>
+          <span>⭐ <b id="rw-score">0</b></span>
+        </div>
+      </div>
+      <div id="rw-banner" class="bw-banner"></div>
+      <div id="rw-toast" class="rw-toast"></div>
+      <div class="rw-walk">
+        <button class="btn" data-move="prev" type="button" aria-label="Walk back">⬇</button>
+        <span id="rw-steps" class="bw-chip"></span>
+        <button class="btn" data-move="next" type="button" aria-label="Walk forward">⬆</button>
+      </div>
+      <span id="rw-credit" class="rw-credit"></span>
+    </div>
+
+    <div id="rw-mapwrap" class="rw-mapwrap" hidden>
+      <button id="rw-maptoggle" class="rw-toggle" type="button">🗺️ Map</button>
+      <div id="rw-mapbox" class="rw-mapbox"></div>
+      <button id="rw-guess" class="btn play rw-guessbtn" type="button" disabled>📍 Guess</button>
+      <small class="rw-attrib">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a></small>
+      <div id="rw-result" class="bw-result" hidden></div>
+    </div>
+
+    <div id="rw-summary" class="bw-panel bw-center" hidden>
+      <div class="bw-card">
+        <div id="rw-sum"></div>
+        <div class="bw-btns">
+          <button id="rw-again" class="btn play" type="button">🔄 Play again</button>
+          <button id="rw-daily" class="btn primary" type="button">📅 Daily</button>
+          <button id="rw-share" class="btn" type="button">📤 Challenge a friend</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <canvas id="rw-confetti" aria-hidden="true"></canvas>
+
+  <section class="neu box prose" style="margin-top:28px">
+    <h2>How to play Real World</h2>
+    <ol>
+      <li>You appear in a real 360° street photo somewhere in the world.</li>
+      <li>Drag to look around. Signs, cars, plants and buildings are great clues!</li>
+      <li>Use ⬆ ⬇ to walk along the street (12 steps per round).</li>
+      <li>Open the map and drop your pin. The closer you are, the more points (up to 5,000).</li>
+    </ol>
+    <p class="small muted">Street photos by the <a href="https://panoramax.fr" rel="noopener" target="_blank">Panoramax</a> community (CC-BY-SA 4.0), shown with each photographer's name. Maps © OpenStreetMap contributors, tiles by OpenFreeMap.</p>
+  </section>
+
+  <style is:global>
+    .rw { position: relative; height: min(78vh, 720px); min-height: 460px; border-radius: 20px; overflow: hidden; background: #1c212c; box-shadow: var(--neu-lg); touch-action: none; user-select: none; }
+    #rw-canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+    #rw-canvas:active { cursor: grabbing; }
+    #rw-canvas.rw-in { animation: rw-in 0.7s ease; }
+    @keyframes rw-in { from { filter: blur(10px) brightness(1.4); opacity: 0.4; } }
+    .rw-loading { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(23, 27, 36, 0.35); pointer-events: none; }
+    .rw-loading span { width: 54px; height: 54px; border-radius: 50%; border: 5px solid rgba(255, 255, 255, 0.2); border-top-color: var(--pink); animation: rw-spin 0.8s linear infinite; }
+    @keyframes rw-spin { to { transform: rotate(360deg); } }
+    .rw-walk { position: absolute; left: 50%; bottom: 16px; translate: -50% 0; display: flex; gap: 10px; align-items: center; }
+    .rw-walk .btn { width: 54px; height: 54px; font-size: 22px; padding: 0; border-radius: 16px; }
+    .rw-walk .bw-chip { flex-direction: row; font: 700 15px var(--fun); }
+    .rw-credit { position: absolute; left: 10px; bottom: 8px; font-size: 11px; color: #fff; text-shadow: 0 1px 4px #000; opacity: 0.85; max-width: 40%; }
+    .rw-toast { position: absolute; top: 70px; left: 50%; translate: -50% 0; padding: 8px 14px; border-radius: 12px; background: rgba(23, 27, 36, 0.85); color: #fff; font-weight: 700; opacity: 0; pointer-events: none; }
+    .rw-toast.go { animation: bw-banner 2s ease both; }
+    .rw-mapwrap { position: absolute; right: 12px; bottom: 12px; width: 260px; height: 190px; border-radius: 16px; overflow: hidden; background: rgba(23, 27, 36, 0.9); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); transition: width 0.25s ease, height 0.25s ease, opacity 0.2s; opacity: 0.85; display: flex; flex-direction: column; }
+    .rw-mapwrap.open { width: min(620px, calc(100% - 24px)); height: min(460px, 70%); opacity: 1; }
+    .rw-mapwrap.reveal { width: calc(100% - 24px); height: calc(100% - 80px); }
+    .rw-mapbox { flex: 1; min-height: 0; }
+    .rw-guessbtn { margin: 8px; }
+    .rw-toggle { display: none; }
+    .rw-attrib { position: absolute; right: 6px; top: 4px; font-size: 10px; color: #1b1f2a; background: rgba(255, 255, 255, 0.75); padding: 1px 6px; border-radius: 6px; z-index: 2; }
+    .rw-attrib a { color: inherit; }
+    .rw-pin { font-size: 34px; display: block; transform-origin: bottom center; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
+    .rw-pin.drop { animation: rw-drop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    @keyframes rw-drop { from { transform: translateY(-40px) scale(0.4); opacity: 0; } }
+    .rw-pts { font: 700 2.2rem var(--fun); background: var(--brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .rw-list { display: grid; gap: 6px; margin: 14px 0; text-align: left; }
+    .rw-list div { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 12px; background: var(--bg-2); animation: bw-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: calc(var(--i) * 0.1s); }
+    .rw-list b { font-family: var(--fun); color: var(--head); } .rw-list small { color: var(--muted); }
+    #rw-confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+    /* shared overlay styles with Blox World (defined here too so the page works standalone) */
+    .bw-panel { position: absolute; inset: 0; }
+    .bw-center { display: grid; place-items: center; background: linear-gradient(180deg, rgba(23, 27, 36, 0.15), rgba(23, 27, 36, 0.65)); }
+    .bw-card { width: min(460px, calc(100% - 32px)); max-height: calc(100% - 24px); overflow: auto; text-align: center; padding: 22px; border-radius: 22px; background: rgba(23, 27, 36, 0.86); backdrop-filter: blur(10px); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45); animation: bw-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .bw-card h2 { font-size: 2rem; margin: 4px 0; }
+    .bw-logo { font-size: 3.4rem; display: inline-block; animation: bw-float 2.4s ease-in-out infinite; }
+    .bw-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+    .bw-big { font-size: 1.2rem; padding: 14px 30px; animation: bw-glow 2s ease-in-out infinite; }
+    .bw-how { display: flex; flex-wrap: wrap; gap: 8px 14px; justify-content: center; margin-top: 16px; font-size: 12px; color: var(--muted); }
+    @keyframes bw-pop { from { transform: scale(0.8) translateY(20px); opacity: 0; } }
+    @keyframes bw-float { 50% { transform: translateY(-8px) rotate(-6deg); } }
+    @keyframes bw-glow { 50% { box-shadow: 0 4px 0 #1f8a5a, 0 0 26px rgba(62, 207, 142, 0.6); } }
+    .bw-top { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; pointer-events: none; }
+    .bw-chip { display: flex; flex-direction: column; padding: 8px 12px; border-radius: 14px; background: rgba(23, 27, 36, 0.72); backdrop-filter: blur(6px); color: var(--head); font-family: var(--fun); }
+    .bw-right { flex-direction: row; align-items: center; gap: 10px; }
+    .bw-timer { width: 40px; height: 40px; transform: rotate(-90deg); }
+    .bw-timer circle { fill: none; stroke: rgba(255, 255, 255, 0.15); stroke-width: 3.2; }
+    .bw-timer #rw-ring { stroke: var(--green); stroke-dasharray: 100; stroke-linecap: round; }
+    .bw-time { margin-left: -44px; width: 40px; text-align: center; font: 700 14px var(--fun); }
+    .bw-time.hurry { color: var(--red); animation: bw-beat 0.5s infinite; }
+    @keyframes bw-beat { 50% { transform: scale(1.25); } }
+    .bw-compass { width: 46px; height: 46px; border-radius: 50%; background: rgba(23, 27, 36, 0.72); display: grid; place-items: center; position: relative; color: #ff5fa2; font-size: 18px; }
+    .bw-compass small { position: absolute; top: 1px; font: 700 9px var(--fun); color: var(--head); }
+    .bw-banner { position: absolute; top: 22%; left: 50%; translate: -50% 0; text-align: center; pointer-events: none; opacity: 0; display: grid; }
+    .bw-banner b { font: 700 clamp(2rem, 6vw, 3.4rem) var(--fun); color: #fff; text-shadow: 0 4px 20px rgba(0, 0, 0, 0.45); }
+    .bw-banner span { font: 600 1rem var(--fun); color: #fff; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6); }
+    .bw-banner.go { animation: bw-banner 2.4s ease both; }
+    @keyframes bw-banner { 0% { opacity: 0; transform: scale(0.6) translateY(20px); } 15% { opacity: 1; transform: scale(1.08); } 25%, 75% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: translateY(-20px); } }
+    .bw-result { position: absolute; left: 8px; right: 8px; bottom: 8px; text-align: center; padding: 10px; border-radius: 14px; background: rgba(23, 27, 36, 0.92); backdrop-filter: blur(6px); animation: bw-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 3; }
+    .bw-result p { margin: 4px 0; }
+    @media (max-width: 640px) {
+      .rw { height: 76vh; border-radius: 14px; }
+      .rw-mapwrap { width: 120px; height: 44px; }
+      .rw-mapwrap .rw-mapbox, .rw-mapwrap .rw-guessbtn { display: none; }
+      .rw-mapwrap .rw-toggle { display: block; height: 44px; border: 0; background: var(--gold); color: #2a1f00; font: 700 15px var(--fun); }
+      .rw-mapwrap.open, .rw-mapwrap.reveal { width: calc(100% - 16px); right: 8px; height: 70%; }
+      .rw-mapwrap.open .rw-mapbox, .rw-mapwrap.open .rw-guessbtn { display: block; }
+      .rw-mapwrap.open .rw-guessbtn { display: inline-flex; }
+      .rw-walk { bottom: 64px; }
+      .rw-credit { max-width: 55%; bottom: 66px; }
+    }
+  </style>
+  <script>
+    import '../scripts/realworld.ts';
+  </script>
+</Base>

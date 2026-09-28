@@ -71,6 +71,16 @@ clears `dist/`. Stop it, build, start it again.
 - **Backend** (`worker/index.js`): `Room` (one Durable Object per match), `Matchmaker`, `Leaderboard` (SQLite).
   No free text anywhere: names are generated.
 
+## Explore modes
+
+- **Blox World** (`/blox-world/`): GeoGuessr inside a generated Roblox-style island (`src/lib/world.js`, seeded, 9 of 10
+  themed zones built from blocks/cylinders/cones). three.js with InstancedMesh, the player's own avatar in 3D
+  (`src/scripts/avatar3d.ts`), Roblox physics (WalkSpeed 16, gravity 196.2, JumpPower 50), keyboard + touch joystick,
+  adaptive quality on slow devices. Daily world and challenge links (`?w=seed`).
+- **Real World** (`/real-world/`): 360° street photos from Panoramax (CC-BY-SA 4.0, photographer credited on screen),
+  walk along the street (next/prev photo), guess on a MapLibre map with OpenFreeMap tiles (free, no key).
+  `scripts/realworld.mjs` rebuilds `src/data/realworld.json` weekly with places that really have 360° coverage.
+
 ## Costs
 
 | Part | Plan | Limit |

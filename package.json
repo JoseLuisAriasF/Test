@@ -7,13 +7,15 @@
     "build": "astro build",
     "preview": "astro preview",
     "update": "node scripts/update.mjs",
-    "test": "node scripts/codes.test.mjs && node scripts/rounds.test.mjs && node scripts/google.test.mjs && node scripts/avatar.test.mjs",
+    "test": "node scripts/codes.test.mjs && node scripts/rounds.test.mjs && node scripts/google.test.mjs && node scripts/avatar.test.mjs && node scripts/explore.test.mjs",
     "deploy": "astro build && wrangler deploy",
     "dev:full": "astro build && wrangler dev"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
-    "astro": "^7.3.5"
+    "astro": "^7.3.5",
+    "maplibre-gl": "^6.11.2",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "wrangler": "^4.142.0"
