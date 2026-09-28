@@ -7,6 +7,7 @@ import { DurableObject } from 'cloudflare:workers';
 import { makeRounds, cleanConfig, points, eloDeltas, TYPES } from '../src/lib/rounds.js';
 import { sanitize, DEFAULT, SKINS } from '../src/lib/avatar.js';
 import { verifyGoogleToken, googleKeys, hashId } from './google.js';
+import { GOOGLE_CLIENT_ID } from '../src/lib/config.js';
 
 const ADJ = ['Turbo', 'Sneaky', 'Mega', 'Cosmic', 'Happy', 'Ninja', 'Golden', 'Rapid', 'Brave', 'Lucky', 'Epic', 'Shiny', 'Silly', 'Mighty', 'Pixel', 'Rocket'];
 const ANIMAL = ['Panda', 'Fox', 'Dragon', 'Noob', 'Tiger', 'Penguin', 'Shark', 'Bunny', 'Robot', 'Owl', 'Frog', 'Unicorn', 'Dino', 'Cat', 'Wolf', 'Bee'];
@@ -14,6 +15,7 @@ const CODE_CHARS = 'BCDFGHJKLMNPQRSTVWXZ23456789'; // no vowels: room codes can'
 const MAX_PLAYERS = 6;
 const QUICK_WAIT = 15000; // casual quick match: start (with a bot if alone) after this
 const COUNTDOWN = 3500;
+const XFER_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I: easy to read and type
 const MIN_RANKED = 3; // ranked games before you appear on the leaderboard / can hold a top spot
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -28,7 +30,7 @@ export default {
     const url = new URL(req.url);
     const path = url.pathname;
     if (path === '/api/quick' || (path === '/api/ranked' && req.headers.get('Upgrade') === 'websocket')) return env.MATCH.get(env.MATCH.idFromName('global')).fetch(req);
-    if (['/api/me', '/api/avatar', '/api/login'].includes(path)) {
+    if (['/api/me', '/api/avatar', '/api/login', '/api/transfer', '/api/redeem'].includes(path)) {
       if (req.method !== 'POST') return Response.json({ error: 'POST only' }, { status: 405 });
       return lb(env).fetch(req);
     }
@@ -287,6 +289,9 @@ export class Leaderboard extends DurableObject {
       elo INTEGER DEFAULT 1000, peak INTEGER DEFAULT 1000, ranked INTEGER DEFAULT 0, wins INTEGER DEFAULT 0,
       games INTEGER DEFAULT 0, correct INTEGER DEFAULT 0, streak INTEGER DEFAULT 0, perfect INTEGER DEFAULT 0, at INTEGER)`);
     this.sql.exec('CREATE INDEX IF NOT EXISTS p_elo ON p(ranked, elo)');
+    // Transfer code: lets players without Google (e.g. under 13) move their profile to another device.
+    try { this.sql.exec('ALTER TABLE p ADD COLUMN xfer TEXT'); } catch {} // already there
+    this.sql.exec('CREATE UNIQUE INDEX IF NOT EXISTS p_xfer ON p(xfer)');
   }
   row(id) {
     return this.sql.exec('SELECT * FROM p WHERE id = ?', String(id)).toArray()[0];
@@ -330,7 +335,7 @@ export class Leaderboard extends DurableObject {
     }
     if (path === '/api/login') {
       let payload;
-      try { payload = await verifyGoogleToken(body.credential, this.env.GOOGLE_CLIENT_ID, googleKeys); } catch (e) { return Response.json({ error: `Google sign-in failed: ${e.message}` }, { status: 401 }); }
+      try { payload = await verifyGoogleToken(body.credential, GOOGLE_CLIENT_ID, googleKeys); } catch (e) { return Response.json({ error: `Google sign-in failed: ${e.message}` }, { status: 401 }); }
       const gid = await hashId(payload.sub);
       let r = this.sql.exec('SELECT * FROM p WHERE gid = ?', gid).toArray()[0];
       if (!r) {
@@ -340,6 +345,23 @@ export class Leaderboard extends DurableObject {
           r = this.row(guest.id);
         } else r = this.create(gid);
       }
+      return this.withTok(r);
+    }
+    if (path === '/api/transfer') {
+      const r = this.auth(body);
+      if (!r) return Response.json({ error: 'Unknown player' }, { status: 401 });
+      let code = body.renew ? null : r.xfer;
+      if (!code) {
+        const bytes = crypto.getRandomValues(new Uint8Array(12)); // 12 x 5 bits = 60 bits
+        code = [...bytes].map((b) => XFER_CHARS[b % 32]).join('');
+        this.sql.exec('UPDATE p SET xfer = ? WHERE id = ?', code, r.id); // renewing kills the old code
+      }
+      return Response.json({ code: `BIBI-${code.slice(0, 4)}-${code.slice(4, 8)}-${code.slice(8)}` });
+    }
+    if (path === '/api/redeem') {
+      const code = String(body.code ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^BIBI/, '');
+      const r = code.length === 12 && this.sql.exec('SELECT * FROM p WHERE xfer = ?', code).toArray()[0];
+      if (!r) return Response.json({ error: 'That code does not exist. Check it and try again!' }, { status: 404 });
       return this.withTok(r);
     }
     if (path === '/api/avatar') {

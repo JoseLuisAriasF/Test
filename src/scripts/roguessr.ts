@@ -1,7 +1,8 @@
 // RoGuessr client: solo presets, custom mixes, friend rooms, quick match and ranked.
 import { TYPES, ALL, ROUND_OPTS, TIME_OPTS, makeRounds, cleanConfig, points, fiftyFifty, tierOf } from '../lib/rounds.js';
 import { avatarCard, avatarSVG, ITEMS, isUnlocked, RARITY } from '../lib/avatar.js';
-import { loadProfile, profileCard, tierHTML, type Profile } from './profile.ts';
+import { loadProfile, profileCard, tierHTML, mountGoogle, type Profile } from './profile.ts';
+import { GOOGLE_CLIENT_ID } from '../lib/config.js';
 
 type Cfg = { types: string[]; rounds: number; time: number };
 type P = { id: string; name: string; avatar: any; score: number; round: number; log: boolean[]; done: boolean; elo?: number | null };
@@ -51,6 +52,9 @@ const send = (msg: object) => ws?.readyState === 1 && ws.send(JSON.stringify(msg
 async function refreshProfile(create = false) {
   profile = await loadProfile(create);
   $('profile').innerHTML = profileCard(profile);
+  // Nudge players to save their progress with Google so it follows them to any device.
+  const g = document.getElementById('gsave');
+  if (g) mountGoogle(g, GOOGLE_CLIENT_ID, (p) => { profile = p; $('profile').innerHTML = profileCard(p); });
   return profile;
 }
 // Mode/rounds/timer picker, used for custom games ("cfg") and ranked challenges ("rcfg").

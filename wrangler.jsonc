@@ -16,7 +16,5 @@
     ]
   },
   // SQLite-backed Durable Objects are available on the Workers Free plan.
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room", "Matchmaker", "Leaderboard"] }],
-  // Public OAuth client id from Google Cloud Console (also set PUBLIC_GOOGLE_CLIENT_ID for the site build).
-  "vars": { "GOOGLE_CLIENT_ID": "" }
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room", "Matchmaker", "Leaderboard"] }]
 }

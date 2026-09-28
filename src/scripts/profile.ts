@@ -25,6 +25,9 @@ export async function loadProfile(create = false, extra = {}): Promise<Profile |
   try { return keep(await post('/api/me', { ...s, ...extra })); } catch { return null; }
 }
 export const saveAvatar = async (avatar: unknown) => keep(await post('/api/avatar', { ...saved(), avatar }));
+// Transfer code: move a profile to another device without Google (e.g. players under 13).
+export const transferCode = async (renew = false): Promise<string> => (await post('/api/transfer', { ...saved(), renew })).code;
+export const redeemCode = async (code: string) => keep(await post('/api/redeem', { code }));
 export const logout = () => { try { localStorage.removeItem(KEY); } catch {} };
 
 export function tierHTML(elo: number) {
@@ -39,13 +42,14 @@ export function tierProgress(elo: number) {
 
 // Card used in the RoGuessr menu and the locker.
 export function profileCard(p: Profile | null) {
-  if (!p) return `<div class="rg-pc">${avatarCard({}, 76)}<div><b style="color:var(--head);font:600 1.2rem var(--fun)">Guest</b><p class="small muted" style="margin:2px 0 8px">Make a free player card to play Ranked, save progress and unlock cosmetics.</p><a class="btn primary" href="/avatar/">✨ Create my avatar</a></div></div>`;
+  if (!p) return `<div class="rg-pc">${avatarCard({}, 76)}<div><b style="color:var(--head);font:600 1.2rem var(--fun)">Guest</b><p class="small muted" style="margin:2px 0 8px">Make a free player card to play Ranked, save progress and unlock cosmetics.</p><span style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn primary" href="/avatar/">✨ Create my avatar</a><a class="btn" href="/avatar/#device">🔑 I already have one</a></span></div></div>`;
   const prog = tierProgress(p.elo);
   return `<div class="rg-pc">${avatarCard(p.avatar, 76)}<div style="flex:1;min-width:0">
     <b style="color:var(--head);font:600 1.2rem var(--fun)">${p.name}</b> ${tierHTML(p.elo)}
     <p class="small muted" style="margin:4px 0">⭐ ${p.elo} rating${p.rank ? ` · #${p.rank} in the world` : ''} · 🏆 ${p.stats.wins} wins</p>
     <div class="progress"><i style="width:${prog.pct}%"></i></div><p class="small muted" style="margin:4px 0 8px">${prog.label}</p>
     <span style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="/avatar/">👕 Avatar & cosmetics</a><a class="btn" href="/ranking/">🏆 Ranking</a></span>
+    ${p.google ? '' : '<div id="gsave" class="gsave"></div>'}
   </div></div>`;
 }
 

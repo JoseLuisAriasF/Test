@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-const clientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID ?? '';
+import { GOOGLE_CLIENT_ID as clientId } from '../lib/config.js';
 ---
 <Base title="Avatar Locker: Unlock Roblox-Style Cosmetics" description="Build your Roblox-style avatar and unlock hats, faces, shirts, auras and frames by playing RoGuessr. The rarest cosmetics are the coolest - and #1 in Ranked wears the Flaming Crown.">
   <section class="hero" style="padding-bottom:6px">
@@ -17,6 +17,17 @@ const clientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID ?? '';
       <button id="reroll" class="btn" type="button" style="margin-top:10px">🎲 New name</button>
       <div id="stats" class="lk-stats"></div>
       <div id="google" class="lk-google"></div>
+      <div id="device" class="lk-device">
+        <b>📱 Play on another device</b>
+        <p class="small muted" style="margin:4px 0 8px">No Google? Use a transfer code to take your profile to another computer, tablet or phone.</p>
+        <button id="xfer-show" class="btn" type="button">🔑 Show my transfer code</button>
+        <div id="xfer-code" class="xfer" hidden></div>
+        <form id="xfer-use" class="search" style="margin-top:10px;padding:5px 5px 5px 12px">
+          <input id="xfer-input" placeholder="BIBI-XXXX-XXXX-XXXX" aria-label="Transfer code" autocomplete="off" style="text-transform:uppercase" />
+          <button class="btn" type="submit">Use</button>
+        </form>
+        <p id="xfer-msg" class="small" aria-live="polite" style="margin:6px 0 0"></p>
+      </div>
       <a class="btn play" href="/guessr/" style="margin-top:12px">▶ Play RoGuessr</a>
     </aside>
 
@@ -42,6 +53,10 @@ const clientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID ?? '';
     .lk-stats div { padding: 8px 10px; border-radius: 12px; box-shadow: var(--inset); }
     .lk-stats b { display: block; font: 600 1.1rem var(--fun); color: var(--head); }
     .lk-google { margin-top: 12px; display: grid; justify-items: center; }
+    .lk-device { margin-top: 14px; padding: 12px; border-radius: 14px; box-shadow: var(--inset); text-align: left; }
+    .lk-device b { font-family: var(--fun); color: var(--head); }
+    .xfer { margin-top: 10px; text-align: center; }
+    .xfer code { display: block; font: 800 1.15rem ui-monospace, monospace; letter-spacing: 0.06em; color: var(--gold); padding: 10px; border-radius: 12px; background: var(--bg-2); border: 2px dashed var(--gold); animation: lk-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
     .lk-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
     .lk-row > b { min-width: 86px; font-family: var(--fun); color: var(--head); }
     .seg { display: inline-flex; padding: 4px; border-radius: 12px; background: var(--bg-2); box-shadow: var(--inset); }
@@ -72,7 +87,7 @@ const clientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID ?? '';
 
   <script>
     import { ITEMS, SLOTS, BODIES, SKINS, HAIR_COLORS, RARITY, DEFAULT, avatarSVG, avatarCard, isUnlocked, reqText, progress } from '../lib/avatar.js';
-    import { loadProfile, saveAvatar, mountGoogle, tierHTML, logout, type Profile } from '../scripts/profile.ts';
+    import { loadProfile, saveAvatar, mountGoogle, tierHTML, logout, transferCode, redeemCode, type Profile } from '../scripts/profile.ts';
 
     const $ = (id: string) => document.getElementById(id)!;
     const clientId = document.querySelector<HTMLElement>('.locker')!.dataset.gclient || '';
@@ -155,6 +170,32 @@ const clientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID ?? '';
         box.querySelector('button')!.onclick = () => { logout(); location.reload(); };
       } else mountGoogle(box, clientId, (np) => { p = np; av = { ...np.avatar }; renderSide(); renderPicker(); renderGoogle(); });
     }
+
+    // Transfer code: show it (creates the profile if needed) or use one from another device.
+    const showCode = async (renew = false) => {
+      try {
+        if (!(await ensure())) throw new Error('offline');
+        const code = await transferCode(renew);
+        const box = $('xfer-code');
+        box.hidden = false;
+        box.innerHTML = `<code>${code}</code><p class="small muted" style="margin:6px 0">🤫 Don't share it: whoever has it can play as you.</p>
+          <span style="display:flex;gap:8px;justify-content:center"><button type="button" class="btn" data-copy style="font-size:12px;padding:7px 12px">📋 Copy</button><button type="button" class="btn" data-renew style="font-size:12px;padding:7px 12px">🔄 New code</button></span>`;
+        box.querySelector<HTMLElement>('[data-copy]')!.onclick = async (e) => { try { await navigator.clipboard.writeText(code); (e.target as HTMLElement).textContent = '✅ Copied'; } catch {} };
+        box.querySelector<HTMLElement>('[data-renew]')!.onclick = () => confirm('Make a new code? The old one will stop working.') && showCode(true);
+      } catch { $('xfer-msg').textContent = '⚠️ Could not get your code. Check your connection.'; }
+    };
+    $('xfer-show').onclick = () => showCode();
+    $('xfer-use').onsubmit = async (e) => {
+      e.preventDefault();
+      const code = ($('xfer-input') as HTMLInputElement).value.trim();
+      if (!code) return;
+      if (p && p.stats.games > 0 && !confirm('This device will switch to the profile of that code. Continue?')) return;
+      try {
+        await redeemCode(code);
+        $('xfer-msg').textContent = '✅ Profile loaded!';
+        setTimeout(() => location.reload(), 600);
+      } catch (err) { $('xfer-msg').textContent = `❌ ${(err as Error).message}`; }
+    };
 
     (async () => {
       p = await loadProfile(false);
