@@ -1,0 +1,169 @@
+---
+import Base from '../layouts/Base.astro';
+import { THEMES, CP_EVERY, RACE_GOAL } from '../lib/parkour.js';
+---
+<Base title="Infinite Parkour: Free Endless Roblox-Style Obby Online" description={`Jump through an endless Roblox-style obby with your own avatar. Weekly ranking, 2-player split screen and online races. Free, no download.`}>
+  <section class="hero" style="padding-bottom:10px">
+    <span class="pill">🏃 New · Endless obby</span>
+    <h1><span class="grad">Infinite Parkour</span>: how far can you go?</h1>
+    <p>An obby that never ends! Jump from block to block, reach checkpoints and climb the weekly ranking. Race a friend on the same screen or online.</p>
+  </section>
+
+  <div class="pk" id="pk">
+    <canvas id="pk-canvas" aria-label="Parkour game"></canvas>
+    <div id="pk-v0" class="pk-view">
+      <i class="pk-bar top"></i><i class="pk-bar bottom"></i><div class="pk-flash"></div>
+      <div class="pk-hud"><div class="pk-chip"><b class="pk-name"></b><small class="pk-stage"></small></div><div class="pk-chip pk-count"></div></div>
+      <div class="pk-banner"></div>
+    </div>
+    <div id="pk-v1" class="pk-view" hidden>
+      <i class="pk-bar top"></i><i class="pk-bar bottom"></i><div class="pk-flash"></div>
+      <div class="pk-hud"><div class="pk-chip"><b class="pk-name"></b><small class="pk-stage"></small></div><div class="pk-chip pk-count"></div></div>
+      <div class="pk-banner"></div>
+    </div>
+    <div id="pk-split" class="pk-split" hidden><span>🏁</span><div><i id="pk-prog0" class="p0"></i><i id="pk-prog1" class="p1"></i></div></div>
+    <div id="pk-joy" class="pk-joy" hidden><span id="pk-knob"></span></div>
+    <button id="pk-jump" class="pk-jumpbtn" type="button" aria-label="Jump" hidden>⤒</button>
+    <div id="pk-tools" class="pk-tools" hidden><button id="pk-mute" class="btn" type="button" aria-label="Sound">🔊</button><button id="pk-end" class="btn" type="button">🏁 End run</button></div>
+
+    <div id="pk-menu" class="pk-panel">
+      <div class="pk-card">
+        <span class="pk-logo">🏃</span>
+        <h2>Infinite Parkour</h2>
+        <div id="pk-joinbox" class="pk-join" hidden><span>⚔️ A friend challenged you to a race!</span><button id="pk-join" class="btn gold" type="button">Join the race</button></div>
+        <div class="pk-modes">
+          <button class="pk-mode hot" data-pk="weekly" type="button"><b>🏆 Weekly Run</b><small>Same course for everyone. Climb the ranking!</small></button>
+          <button class="pk-mode" data-pk="endless" type="button"><b>♾️ Endless</b><small>A new random course every time</small></button>
+          <button class="pk-mode hot2" data-pk="online" type="button"><b>⚔️ Ranked Race</b><small>1v1 live vs another player. Win rating!</small></button>
+        </div>
+        <button id="pk-friend" class="btn" type="button" style="margin-top:10px">🔗 Race a friend with a link</button>
+        <p id="pk-best" class="small" style="color:var(--gold);margin:10px 0 0"></p>
+        <p id="pk-rating" class="small" style="color:var(--pink);margin:4px 0 0"></p>
+        <h3 class="pk-toph">🏆 This week's top climbers</h3>
+        <ol id="pk-top" class="pk-toplist"><li class="muted">Loading…</li></ol>
+        <h3 class="pk-toph">⚔️ Top racers</h3>
+        <ol id="pk-racers" class="pk-toplist pk-racers"><li class="muted">Loading…</li></ol>
+        <div class="pk-how"><span>WASD / arrows: move</span><span>Space: jump</span><span>Drag: turn camera</span><span>Ranked: first to platform {RACE_GOAL} wins</span></div>
+      </div>
+    </div>
+
+    <div id="pk-wait" class="pk-panel" hidden>
+      <div class="pk-card">
+        <span class="pk-logo">🌐</span>
+        <h2>Online Race</h2>
+        <p id="pk-waittxt" class="muted">Looking for a rival…</p>
+        <div class="pk-spin"></div>
+        <div id="pk-invite" hidden><input id="pk-link" readonly aria-label="Race link" /><button id="pk-copy" class="btn primary" type="button">📤 Copy link</button></div>
+        <button id="pk-cancel" class="btn" type="button" style="margin-top:12px">Cancel</button>
+      </div>
+    </div>
+
+    <div id="pk-summary" class="pk-panel" hidden>
+      <div class="pk-card">
+        <div id="pk-sum"></div>
+        <div class="pk-btns"><button id="pk-again" class="btn play" type="button">🔄 Play again</button><button id="pk-back" class="btn" type="button">🏠 Menu</button></div>
+        <h3 class="pk-toph">🏆 This week's top climbers</h3>
+        <ol class="pk-toplist"></ol>
+      </div>
+    </div>
+  </div>
+
+  <section class="neu box prose" style="margin-top:28px">
+    <h2>How to play Infinite Parkour</h2>
+    <ol>
+      <li>Run and jump from platform to platform. The course never ends and gets a little harder as you climb.</li>
+      <li>Every {CP_EVERY} platforms there is a golden checkpoint. If you fall, you go back to your last checkpoint.</li>
+      <li>Watch out for special blocks: 🟩 bounce pads launch you high, ↔️ moving blocks slide sideways, 🧊 glass blocks vanish after you step on them, and red lava strips must be jumped over.</li>
+      <li>Falling a lot? After 3 falls in the same stage, glowing helper blocks appear. And when you fall, luck is on your side: a guardian angel 😇 may come down from the sky, catch you and carry you back to the platform you fell from. The more you fall, the luckier you get!</li>
+      <li>In a Ranked Race you play live against another player on their own computer or phone. The screen splits in two like old console games: your run on top, your rival's run below. The first to reach platform {RACE_GOAL} wins and earns race rating. Leaving a ranked race counts as a loss. Want to race a friend just for fun? Send them a race link.</li>
+    </ol>
+    <p>Stages: {THEMES.map((t) => `${t.emoji} ${t.name}`).join(' · ')}.</p>
+    <p class="small muted">The weekly ranking resets every Monday with a brand new course. Players get a random fun name, there is no chat.</p>
+  </section>
+
+  <style is:global>
+    .pk { position: relative; height: min(80vh, 740px); min-height: 480px; border-radius: 20px; overflow: hidden; background: #1c212c; box-shadow: var(--neu-lg); touch-action: none; user-select: none; }
+    #pk-canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+    [hidden] { display: none !important; }
+    .pk-view { position: absolute; left: 0; right: 0; top: 0; height: 100%; pointer-events: none; overflow: hidden; }
+    .pk.split .pk-view { height: 50%; }
+    .pk.split #pk-v1 { top: 50%; }
+    .pk.split #pk-v0 { border-bottom: 3px solid #11141b; }
+    .pk-hud { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .pk-chip { display: flex; flex-direction: column; padding: 8px 12px; border-radius: 14px; background: rgba(23, 27, 36, 0.72); backdrop-filter: blur(6px); color: var(--head); font-family: var(--fun); }
+    .pk-chip small { color: var(--muted); font-size: 12px; }
+    .pk-count { font: 700 1.3rem var(--fun); flex-direction: row; }
+    .pk-banner { position: absolute; top: 26%; left: 50%; translate: -50% 0; text-align: center; opacity: 0; display: grid; width: 90%; }
+    .pk-banner b { font: 700 clamp(1.8rem, 6vw, 3.4rem) var(--fun); color: #fff; text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); }
+    .pk-banner span { font: 600 1rem var(--fun); color: #fff; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7); }
+    .pk-banner.go { animation: pk-banner 2.4s ease both; }
+    @keyframes pk-banner { 0% { opacity: 0; transform: scale(0.6) translateY(20px); } 15% { opacity: 1; transform: scale(1.08); } 25%, 75% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: translateY(-20px); } }
+    /* movie letterbox + vignette while falling */
+    .pk-bar { position: absolute; left: 0; right: 0; height: 12%; background: #000; transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); }
+    .pk-bar.top { top: 0; transform: translateY(-100%); }
+    .pk-bar.bottom { bottom: 0; transform: translateY(100%); }
+    .pk-view.cine .pk-bar { transform: none; }
+    .pk-view::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.55)); opacity: 0; transition: opacity 0.5s; }
+    .pk-view.cine::after { opacity: 1; }
+    .pk-view.cine .pk-hud { opacity: 0; }
+    /* divine rescue: golden light pours from the top of the screen */
+    .pk-view::before { content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s; background: radial-gradient(ellipse 60% 90% at 50% -10%, rgba(255, 240, 170, 0.75), rgba(255, 210, 90, 0.25) 45%, transparent 70%), repeating-conic-gradient(from 0deg at 50% -10%, rgba(255, 236, 160, 0.14) 0deg 4deg, transparent 4deg 12deg); mix-blend-mode: screen; }
+    .pk-view.divine::before { opacity: 1; animation: pk-holy 2.4s ease-in-out infinite; }
+    .pk-view.divine .pk-bar { transform: none; background: linear-gradient(#000, #2a2208); }
+    @keyframes pk-holy { 50% { filter: brightness(1.35); } }
+    .pk-flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
+    .pk-flash.go { animation: pk-flash 0.6s ease; }
+    @keyframes pk-flash { 30% { opacity: 1; } }
+    .pk-split { position: absolute; left: 50%; top: 50%; translate: -50% -50%; display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #11141b; z-index: 2; pointer-events: none; }
+    .pk-split div { position: relative; width: min(260px, 50vw); height: 8px; border-radius: 99px; background: rgba(255, 255, 255, 0.15); }
+    .pk-split i { position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%; translate: -50% -50%; transition: left 0.3s; border: 2px solid #fff; left: 0; }
+    .pk-split .p0 { background: #ff5fa2; } .pk-split .p1 { background: #5ee7ff; }
+    .pk-tools { position: absolute; left: 10px; bottom: 10px; display: flex; gap: 8px; z-index: 3; }
+    .pk.split .pk-stage { display: none; }
+    .pk-tools .btn { padding: 9px 12px; font-size: 14px; }
+    .pk-joy { position: absolute; width: 100px; height: 100px; margin: -50px 0 0 -50px; border-radius: 50%; background: rgba(255, 255, 255, 0.15); border: 2px solid rgba(255, 255, 255, 0.35); pointer-events: none; }
+    .pk-joy span { position: absolute; left: 30px; top: 30px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255, 255, 255, 0.7); }
+    .pk-jumpbtn { position: absolute; right: 18px; bottom: 70px; width: 78px; height: 78px; border-radius: 50%; border: 0; background: var(--green); color: #06301d; font: 700 34px var(--fun); box-shadow: 0 5px 0 #1f8a5a; z-index: 3; }
+    .pk-jumpbtn:active { transform: translateY(4px); box-shadow: 0 1px 0 #1f8a5a; }
+    .pk-panel { position: absolute; inset: 0; display: grid; place-items: center; background: linear-gradient(180deg, rgba(23, 27, 36, 0.1), rgba(23, 27, 36, 0.6)); z-index: 5; }
+    .pk-card { width: min(520px, calc(100% - 28px)); max-height: calc(100% - 24px); overflow: auto; text-align: center; padding: 20px; border-radius: 22px; background: rgba(23, 27, 36, 0.88); backdrop-filter: blur(10px); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45); animation: pk-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .pk-card h2 { font-size: 2rem; margin: 2px 0 10px; }
+    .pk-logo { font-size: 3.2rem; display: inline-block; animation: pk-float 2.2s ease-in-out infinite; }
+    @keyframes pk-pop { from { transform: scale(0.8) translateY(20px); opacity: 0; } }
+    @keyframes pk-float { 50% { transform: translateY(-8px) rotate(-8deg); } }
+    .pk-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .pk-mode { display: grid; gap: 4px; text-align: left; padding: 12px 14px; border: 0; border-radius: 16px; cursor: pointer; background: #262c3a; color: var(--head); box-shadow: 0 4px 0 #0d1017; transition: transform 0.15s, box-shadow 0.15s; }
+    .pk-mode b { font: 700 1.05rem var(--fun); }
+    .pk-mode small { color: var(--muted); font-size: 12px; line-height: 1.3; }
+    .pk-mode:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 7px 0 #0d1017; }
+    .pk-mode:disabled { opacity: 0.45; cursor: not-allowed; }
+    .pk-mode.hot { background: var(--brand); box-shadow: 0 4px 0 #3a2a78, 0 0 24px rgba(184, 108, 245, 0.45); animation: pk-glow 2.2s ease-in-out infinite; }
+    .pk-mode.hot small { color: rgba(255, 255, 255, 0.85); }
+    .pk-mode.hot2 { background: linear-gradient(135deg, #ff5fa2, #ff8a3d); box-shadow: 0 4px 0 #8a2a4f; }
+    .pk-mode.hot2 small { color: rgba(255, 255, 255, 0.85); }
+    .pk-elo { font: 700 1.4rem var(--fun); } .pk-elo.up { color: var(--green); } .pk-elo.down { color: var(--red); }
+    @keyframes pk-glow { 50% { box-shadow: 0 4px 0 #3a2a78, 0 0 36px rgba(255, 95, 162, 0.6); } }
+    .pk-join { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; padding: 10px; border-radius: 14px; background: rgba(255, 204, 51, 0.12); color: var(--gold); font-weight: 600; }
+    .pk-toph { font-size: 1rem; margin: 16px 0 6px; }
+    .pk-toplist { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; text-align: left; }
+    .pk-toplist li { display: grid; grid-template-columns: 28px 30px 1fr auto; gap: 8px; align-items: center; padding: 4px 10px; border-radius: 12px; background: var(--bg-2); font-size: 14px; }
+    .pk-toplist li.me { outline: 2px solid var(--pink); }
+    .pk-toplist li.muted { display: block; text-align: center; }
+    .pk-toplist svg { width: 30px; height: 30px; }
+    .pk-toplist em { font-style: normal; font-family: var(--fun); color: var(--gold); }
+    .pk-how { display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; margin-top: 14px; font-size: 12px; color: var(--muted); }
+    .pk-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+    .pk-spin { width: 46px; height: 46px; margin: 12px auto; border-radius: 50%; border: 5px solid rgba(255, 255, 255, 0.15); border-top-color: var(--pink); animation: pk-spin 0.8s linear infinite; }
+    @keyframes pk-spin { to { transform: rotate(360deg); } }
+    #pk-invite { display: flex; gap: 8px; margin-top: 8px; }
+    #pk-invite input { flex: 1; min-width: 0; padding: 10px; border-radius: 12px; border: 0; background: var(--bg-2); color: var(--head); }
+    @media (max-width: 640px) {
+      .pk { height: 78vh; border-radius: 14px; }
+      .pk-modes { grid-template-columns: 1fr; }
+      .pk-tools .btn { padding: 7px 10px; font-size: 13px; }
+    }
+  </style>
+  <script>
+    import '../scripts/parkour.ts';
+  </script>
+</Base>

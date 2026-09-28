@@ -36,6 +36,30 @@ export function haversine(lat1, lon1, lat2, lon2) {
 export const realScore = (km) => (km < 0.05 ? 5000 : Math.round(5000 * Math.exp(-km / 1500)));
 export const bloxScore = (studs) => (studs < 4 ? 5000 : Math.round(5000 * Math.exp(-studs / 55)));
 
+// Initial bearing from a to b, degrees clockwise from north (0..360).
+export function bearing(lat1, lon1, lat2, lon2) {
+  const r = Math.PI / 180;
+  const y = Math.sin((lon2 - lon1) * r) * Math.cos(lat2 * r);
+  const x = Math.cos(lat1 * r) * Math.sin(lat2 * r) - Math.sin(lat1 * r) * Math.cos(lat2 * r) * Math.cos((lon2 - lon1) * r);
+  return ((Math.atan2(y, x) / r) + 360) % 360;
+}
+export const angleDiff = (a, b) => Math.abs(((a - b + 540) % 360) - 180);
+
+// Country, flag and continent for a place label like "Paris, France" (used for hints and the reveal).
+const COUNTRIES = {
+  France: ['🇫🇷', 'Europe'], UK: ['🇬🇧', 'Europe'], Germany: ['🇩🇪', 'Europe'], Spain: ['🇪🇸', 'Europe'], Italy: ['🇮🇹', 'Europe'],
+  Netherlands: ['🇳🇱', 'Europe'], Belgium: ['🇧🇪', 'Europe'], Austria: ['🇦🇹', 'Europe'], Switzerland: ['🇨🇭', 'Europe'], Portugal: ['🇵🇹', 'Europe'],
+  Norway: ['🇳🇴', 'Europe'], Denmark: ['🇩🇰', 'Europe'], Sweden: ['🇸🇪', 'Europe'], Czechia: ['🇨🇿', 'Europe'], Corsica: ['🇫🇷', 'Europe'], 'French Alps': ['🇫🇷', 'Europe'],
+  Japan: ['🇯🇵', 'Asia'], USA: ['🇺🇸', 'North America'], Canada: ['🇨🇦', 'North America'], Argentina: ['🇦🇷', 'South America'],
+  'Reunion Island': ['🇷🇪', 'Africa'], Martinique: ['🇲🇶', 'North America'], Guadeloupe: ['🇬🇵', 'North America'], 'French Guiana': ['🇬🇫', 'South America'],
+  'New Caledonia': ['🇳🇨', 'Oceania'], 'French Polynesia': ['🇵🇫', 'Oceania'],
+};
+export function placeInfo(label) {
+  const country = label.includes(',') ? label.split(',').pop().trim() : label;
+  const [flag, continent] = COUNTRIES[country] ?? ['🌍', 'Somewhere on Earth'];
+  return { country: country === 'Corsica' || country === 'French Alps' ? 'France' : country, flag, continent };
+}
+
 export const fmtKm = (km) => (km < 1 ? `${Math.round(km * 1000)} m` : km < 100 ? `${km.toFixed(1)} km` : `${Math.round(km).toLocaleString('en')} km`);
 export const RANKS = [
   [0, '🐣 Lost Noob'], [0.2, '🧭 Explorer'], [0.45, '🗺️ Navigator'], [0.7, '🔭 Pathfinder'], [0.88, '👑 World Legend'],

@@ -1,13 +1,15 @@
 // RoGuessr backend. Only /api/* reaches this Worker; the rest of the site is static assets (free, unlimited).
 //   Room        - one Durable Object per match (WebSocket hibernation). Scores every answer itself.
 //   Matchmaker  - hands out open rooms for quick match / ranked queues.
-//   Leaderboard - SQLite profiles: rating, stats (unlock cosmetics), avatar, optional Google link.
+//   Leaderboard - SQLite profiles: rating, stats (unlock cosmetics), avatar, optional Google link; weekly parkour board.
+//   Race        - Infinite Parkour online races: the 'lobby' instance pairs players, one instance per race relays positions.
 // Players never type text: names are generated, so there is no chat to moderate.
 import { DurableObject } from 'cloudflare:workers';
 import { makeRounds, cleanConfig, points, eloDeltas, TYPES } from '../src/lib/rounds.js';
 import { sanitize, DEFAULT, SKINS } from '../src/lib/avatar.js';
 import { verifyGoogleToken, googleKeys, hashId } from './google.js';
 import { GOOGLE_CLIENT_ID } from '../src/lib/config.js';
+import { weekOf, makeCourse, RACE_GOAL, MIN_MS_PER_PLAT } from '../src/lib/parkour.js';
 
 const ADJ = ['Turbo', 'Sneaky', 'Mega', 'Cosmic', 'Happy', 'Ninja', 'Golden', 'Rapid', 'Brave', 'Lucky', 'Epic', 'Shiny', 'Silly', 'Mighty', 'Pixel', 'Rocket'];
 const ANIMAL = ['Panda', 'Fox', 'Dragon', 'Noob', 'Tiger', 'Penguin', 'Shark', 'Bunny', 'Robot', 'Owl', 'Frog', 'Unicorn', 'Dino', 'Cat', 'Wolf', 'Bee'];
@@ -34,7 +36,15 @@ export default {
       if (req.method !== 'POST') return Response.json({ error: 'POST only' }, { status: 405 });
       return lb(env).fetch(req);
     }
-    if (path === '/api/top') {
+    if (path === '/api/parkour') {
+      if (req.method !== 'POST') return Response.json({ error: 'POST only' }, { status: 405 });
+      return lb(env).fetch(req);
+    }
+    if (path === '/api/race' || /^\/api\/race\/[A-Z0-9]{5}$/.test(path)) {
+      if (req.headers.get('Upgrade') !== 'websocket') return Response.json({ error: 'WebSocket only' }, { status: 426 });
+      return env.RACE.get(env.RACE.idFromName(path === '/api/race' ? 'lobby' : path.slice(10))).fetch(req);
+    }
+    if (path === '/api/top' || path === '/api/parkour/top') {
       const cache = caches.default;
       let res = await cache.match(req);
       if (!res) {
@@ -292,6 +302,12 @@ export class Leaderboard extends DurableObject {
     // Transfer code: lets players without Google (e.g. under 13) move their profile to another device.
     try { this.sql.exec('ALTER TABLE p ADD COLUMN xfer TEXT'); } catch {} // already there
     this.sql.exec('CREATE UNIQUE INDEX IF NOT EXISTS p_xfer ON p(xfer)');
+    // Infinite Parkour weekly board: best platform reached on the week's course (ties: faster wins).
+    // Parkour ranked races: a separate rating so racing and RoGuessr don't mix.
+    for (const col of ['pkelo INTEGER DEFAULT 1000', 'pkwins INTEGER DEFAULT 0', 'pkgames INTEGER DEFAULT 0']) {
+      try { this.sql.exec(`ALTER TABLE p ADD COLUMN ${col}`); } catch {} // already there
+    }
+    this.sql.exec('CREATE TABLE IF NOT EXISTS pk (wk INTEGER, id TEXT, score INTEGER, ms INTEGER, at INTEGER, PRIMARY KEY (wk, id))');
   }
   row(id) {
     return this.sql.exec('SELECT * FROM p WHERE id = ?', String(id)).toArray()[0];
@@ -310,7 +326,7 @@ export class Leaderboard extends DurableObject {
   }
   view(r, rank = this.rank(r)) {
     const stats = { games: r.games, wins: r.wins, correct: r.correct, streak: r.streak, perfect: r.perfect, peak: r.peak };
-    return { id: r.id, name: r.name, avatar: sanitize(JSON.parse(r.av || 'null'), stats, rank), elo: r.elo, rank, ranked: r.ranked, google: !!r.gid, stats };
+    return { id: r.id, name: r.name, avatar: sanitize(JSON.parse(r.av || 'null'), stats, rank), elo: r.elo, rank, ranked: r.ranked, google: !!r.gid, stats, pk: { elo: r.pkelo ?? 1000, wins: r.pkwins ?? 0, games: r.pkgames ?? 0 } };
   }
   create(gid = null) {
     const id = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
@@ -378,10 +394,44 @@ export class Leaderboard extends DurableObject {
       const rows = this.sql.exec('SELECT * FROM p WHERE ranked >= ? ORDER BY elo DESC, wins DESC, id ASC LIMIT 100', MIN_RANKED).toArray();
       return Response.json({ top: rows.map((r, i) => ({ ...this.view(r, i + 1), stats: undefined, wins: r.wins, ranked: r.ranked })), total: this.sql.exec('SELECT COUNT(*) AS n FROM p WHERE ranked >= ?', MIN_RANKED).one().n });
     }
+    if (path === '/api/parkour') {
+      const r = this.auth(body);
+      if (!r) return Response.json({ error: 'Unknown player' }, { status: 401 });
+      const wk = weekOf(), score = Math.floor(+body.score), ms = Math.floor(+body.ms);
+      if (body.wk !== wk) return Response.json({ error: 'A new week started! Play the new course.' }, { status: 409 });
+      if (!(score >= 1 && score <= 5000 && ms >= score * MIN_MS_PER_PLAT && ms < 864e5)) return Response.json({ error: 'Run rejected' }, { status: 400 });
+      this.sql.exec(
+        `INSERT INTO pk (wk, id, score, ms, at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (wk, id) DO UPDATE SET score = excluded.score, ms = excluded.ms, at = excluded.at
+         WHERE excluded.score > pk.score OR (excluded.score = pk.score AND excluded.ms < pk.ms)`,
+        wk, r.id, score, ms, Date.now(),
+      );
+      const best = this.sql.exec('SELECT score, ms FROM pk WHERE wk = ? AND id = ?', wk, r.id).one();
+      const rank = this.sql.exec('SELECT COUNT(*) AS n FROM pk WHERE wk = ? AND (score > ? OR (score = ? AND ms < ?))', wk, best.score, best.score, best.ms).one().n + 1;
+      return Response.json({ ...best, rank });
+    }
+    if (path === '/api/parkour/top') {
+      const wk = weekOf();
+      const rows = this.sql.exec('SELECT p.*, pk.score AS pscore, pk.ms AS pms FROM pk JOIN p ON p.id = pk.id WHERE pk.wk = ? ORDER BY pk.score DESC, pk.ms ASC LIMIT 50', wk).toArray();
+      const racers = this.sql.exec('SELECT * FROM p WHERE pkgames > 0 ORDER BY pkelo DESC, pkwins DESC, id ASC LIMIT 20').toArray();
+      return Response.json({
+        wk,
+        top: rows.map((r) => ({ id: r.id, name: r.name, avatar: this.view(r).avatar, score: r.pscore, ms: r.pms })),
+        racers: racers.map((r) => ({ id: r.id, name: r.name, avatar: this.view(r).avatar, elo: r.pkelo, wins: r.pkwins, games: r.pkgames })),
+      });
+    }
     // internal (only reachable from Room, never routed from the public Worker)
     if (path === '/verify') {
       const r = this.auth(body);
       return r ? Response.json(this.view(r)) : Response.json(null, { status: 404 });
+    }
+    if (path === '/pkresult') {
+      const out = {};
+      for (const x of Array.isArray(body) ? body : []) {
+        this.sql.exec('UPDATE p SET pkelo = MAX(0, pkelo + ?), pkwins = pkwins + ?, pkgames = pkgames + 1, at = ? WHERE id = ?', x.delta | 0, x.won ? 1 : 0, Date.now(), String(x.id));
+        const r = this.row(x.id);
+        if (r) out[x.id] = r.pkelo;
+      }
+      return Response.json(out);
     }
     if (path === '/result') {
       const out = {};
@@ -397,5 +447,95 @@ export class Leaderboard extends DurableObject {
       return Response.json(out);
     }
     return Response.json({ error: 'Not found' }, { status: 404 });
+  }
+}
+
+// Infinite Parkour online races between two PCs. Instance 'lobby' pairs players for RANKED races (it arms the race
+// server-side, so a friend link can never be ranked). A race instance accepts 2 verified profiles, starts both at the
+// same moment and relays positions (~10/s). The server decides the winner: first to reach RACE_GOAL, no faster than
+// humanly possible, or the one still there if the other leaves. Ranked races move the parkour rating (Elo).
+export class Race extends DurableObject {
+  async fetch(req) {
+    const path = new URL(req.url).pathname;
+    if (path === '/arm') { await this.ctx.storage.put('ranked', true); return new Response('ok'); } // internal: lobby only
+    const code = path.split('/')[3];
+    const [client, server] = Object.values(new WebSocketPair());
+    this.ctx.acceptWebSocket(server);
+    if (!code) {
+      const waiting = this.ctx.getWebSockets().filter((w) => w !== server && w.readyState === WebSocket.OPEN);
+      if (waiting.length) {
+        const race = roomCode();
+        await this.env.RACE.get(this.env.RACE.idFromName(race)).fetch('https://race/arm', { method: 'POST' });
+        const msg = JSON.stringify({ t: 'match', code: race });
+        for (const w of [waiting[0], server]) { w.send(msg); w.close(1000, 'matched'); }
+      }
+      return new Response(null, { status: 101, webSocket: client });
+    }
+    if (this.ctx.getWebSockets().length > 2 || (await this.ctx.storage.get('start'))) {
+      server.send(JSON.stringify({ t: 'full' }));
+      server.close(1000, 'full');
+    } else {
+      const ip = req.headers.get('CF-Connecting-IP') ?? '';
+      server.serializeAttachment({ code, ip: ip ? (await hashId(ip)).slice(0, 10) : '' });
+    }
+    return new Response(null, { status: 101, webSocket: client });
+  }
+  async finish(winner, forfeit = false) {
+    if (await this.ctx.storage.get('winner')) return;
+    await this.ctx.storage.put('winner', winner);
+    const start = await this.ctx.storage.get('start');
+    const ranked = !!(await this.ctx.storage.get('ranked'));
+    const players = (await this.ctx.storage.get('players')) ?? [];
+    let deltas = {}, elo = {};
+    if (ranked && players.length === 2) {
+      deltas = eloDeltas(players.map((p) => ({ ...p, score: p.id === winner ? 1 : 0 })), 32); // same network => 0 (no alt farming)
+      elo = await lb(this.env).fetch('https://lb/pkresult', { method: 'POST', body: JSON.stringify(players.map((p) => ({ id: p.id, delta: deltas[p.id], won: p.id === winner }))) }).then((r) => r.json());
+    }
+    const msg = JSON.stringify({ t: 'end', winner, ms: Date.now() - start, forfeit, ranked, deltas, elo });
+    for (const w of this.ctx.getWebSockets()) w.send(msg);
+  }
+  others(ws) { return this.ctx.getWebSockets().filter((w) => w !== ws); }
+  async webSocketMessage(ws, raw) {
+    let m;
+    try { m = JSON.parse(raw); } catch { return; }
+    const me = ws.deserializeAttachment();
+    if (!me) return;
+    if (m.t === 'hello' && !me.id) {
+      const v = await lb(this.env).fetch('https://lb/verify', { method: 'POST', body: JSON.stringify({ id: m.id, tok: m.tok }) }).then((r) => (r.ok ? r.json() : null));
+      if (!v || this.others(ws).some((w) => w.deserializeAttachment()?.id === v.id)) { ws.close(1008, 'bad profile'); return; }
+      ws.serializeAttachment({ ...me, id: v.id, name: v.name, avatar: v.avatar, elo: v.pk.elo, i: 0 });
+      const players = this.ctx.getWebSockets().map((w) => w.deserializeAttachment()).filter((p) => p?.id);
+      if (players.length === 2 && !(await this.ctx.storage.get('start'))) {
+        const start = Date.now() + 4000;
+        const ranked = !!(await this.ctx.storage.get('ranked'));
+        await this.ctx.storage.put({ start, players: players.map(({ id, elo, ip }) => ({ id, elo, ip })) });
+        const msg = JSON.stringify({ t: 'start', at: start, now: Date.now(), seed: me.code, goal: RACE_GOAL, ranked, players: players.map(({ id, name, avatar, elo }) => ({ id, name, avatar, elo })) });
+        for (const w of this.ctx.getWebSockets()) w.send(msg);
+      }
+      return;
+    }
+    if (m.t === 'p' && me.id) {
+      const start = await this.ctx.storage.get('start');
+      if (!start || (await this.ctx.storage.get('winner'))) return;
+      // anti-cheat: progress only counts if you are really standing near that platform of this race's course,
+      // a few platforms at a time, and not faster than humanly possible
+      this.course ??= makeCourse(me.code);
+      let i = Math.min(Math.floor(+m.i) || 0, RACE_GOAL);
+      const p = i > me.i && this.course.ensure(i + 1)[i];
+      if (!p || i > me.i + 3 || Math.hypot(+m.x - p.x, +m.z - p.z) > 12 || Math.abs(+m.y - p.y) > 4 || Date.now() - start < i * MIN_MS_PER_PLAT) i = me.i;
+      if (i !== me.i) ws.serializeAttachment({ ...me, i });
+      const out = JSON.stringify({ t: 'p', x: +m.x || 0, y: +m.y || 0, z: +m.z || 0, f: +m.f || 0, s: +m.s || 0, a: m.a ? 1 : 0, e: String(m.e ?? '').slice(0, 8), i });
+      for (const w of this.others(ws)) w.send(out);
+      if (i >= RACE_GOAL && Date.now() - start >= RACE_GOAL * MIN_MS_PER_PLAT) await this.finish(me.id);
+    }
+  }
+  async webSocketClose(ws) {
+    const me = ws.deserializeAttachment();
+    const rest = this.others(ws);
+    const stayer = rest.map((w) => w.deserializeAttachment()).find((p) => p?.id);
+    // leaving a started race = losing it (so rage-quitting can't dodge a ranked loss)
+    if (me?.id && stayer && (await this.ctx.storage.get('start'))) await this.finish(stayer.id, true);
+    else if (me?.id) for (const w of rest) w.send(JSON.stringify({ t: 'left' }));
+    if (me?.code && !rest.length) await this.ctx.storage.deleteAll(); // race over: leave nothing behind
   }
 }

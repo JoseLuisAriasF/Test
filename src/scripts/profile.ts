@@ -5,6 +5,7 @@ import { avatarCard } from '../lib/avatar.js';
 export type Profile = {
   id: string; tok: string; name: string; avatar: any; elo: number; rank: number; ranked: number; google: boolean;
   stats: { games: number; wins: number; correct: number; streak: number; perfect: number; peak: number };
+  pk?: { elo: number; wins: number; games: number }; // Infinite Parkour race rating
 };
 
 const KEY = 'rg-me';

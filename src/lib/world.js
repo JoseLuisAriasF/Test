@@ -19,6 +19,16 @@ export const ZONES = {
   candy: { name: 'Candy Land', emoji: '🍭', ground: '#ffc3dd' },
   snow: { name: 'Frosty Peak', emoji: '❄️', ground: '#eef6ff' },
   volcano: { name: 'Lava Mountain', emoji: '🌋', ground: '#4a3a36' },
+  school: { name: 'Block School', emoji: '🏫', ground: '#c9b08a' },
+  bathroom: { name: 'Giant Bathroom', emoji: '🛁', ground: '#d7eef7' },
+  kitchen: { name: 'Mega Kitchen', emoji: '🍳', ground: '#f3e0c0' },
+  bedroom: { name: 'Toy Bedroom', emoji: '🧸', ground: '#b9a3e3' },
+  playground: { name: 'Playground', emoji: '🛝', ground: '#f5d58a' },
+  stadium: { name: 'Soccer Stadium', emoji: '⚽', ground: '#3fa34d' },
+  space: { name: 'Moon Base', emoji: '🚀', ground: '#8e8e9e' },
+  jungle: { name: 'Wild Jungle', emoji: '🦜', ground: '#2f7d3a' },
+  desert: { name: 'Sandy Desert', emoji: '🐫', ground: '#e9c27a' },
+  arcade: { name: 'Neon Arcade', emoji: '🕹️', ground: '#2a2346' },
 };
 
 // Part: { s: shape, x, y (bottom), z, w, h, d, c: color, solid, ry?, a?: anim, e?: emissive }
@@ -215,6 +225,250 @@ const BUILD = {
       const a = r() * 6.28, d = 40 + r() * 14;
       add(P('box', cx + Math.cos(a) * d, 0, cz + Math.sin(a) * d, 4 + r() * 4, 2 + r() * 3, 4 + r() * 4, '#3e2723'));
     }
+  },
+
+  school({ r, cx, cz, add, mark }) {
+    const sx = cx, sz = cz - 30;
+    add(P('box', sx, 0, sz, 60, 18, 18, '#e8744f'));
+    add(P('box', sx, 18, sz, 62, 1.5, 20, '#8d4a36', { solid: false }));
+    for (let i = 0; i < 6; i++) add(P('box', sx - 25 + i * 10, 6, sz + 9.1, 5, 5, 0.3, '#bfe9ff', { solid: false }));
+    add(P('box', sx, 0, sz + 9.1, 6, 9, 0.4, '#5b3a29', { solid: false }));
+    add(P('box', sx, 19.5, sz, 10, 8, 10, '#e8744f'));
+    add(P('cyl', sx, 24, sz - 5.2, 5, 5, 0.4, '#ffffff', { solid: false, ry: Math.PI / 2, e: '#ffffff' })); // clock
+    mark('School', '🏫', sx, sz);
+    const bx = cx - 36, bz = cz + 30; // school bus
+    add(P('box', bx, 1, bz, 10, 7, 24, '#f7c600'));
+    for (const dz of [-8, 8]) for (const dx of [-5, 5]) add(P('cyl', bx + dx, 0, bz + dz, 3, 3, 3, '#222', { solid: false, ry: Math.PI / 2 }));
+    for (let i = 0; i < 4; i++) add(P('box', bx + 5.1, 5, bz - 8 + i * 5, 0.3, 2.5, 3.5, '#bfe9ff', { solid: false }));
+    mark('School Bus', '🚌', bx, bz);
+    const px = cx + 34, pz = cz + 28; // giant pencil + books
+    add(P('box', px, 0, pz, 3, 3, 30, '#ffb400', { ry: 0.3 }));
+    add(P('box', px - 4.5, 0, pz - 14, 3, 3, 3, '#f8a5c2', { solid: false, ry: 0.3 }));
+    [['#e74c3c', 0], ['#3498db', 2.5], ['#2ecc71', 5]].forEach(([c, y]) => add(P('box', px - 14, y, pz + 18, 12, 2.5, 16, c, { ry: r() * 0.4 })));
+    mark('Giant Pencil', '✏️', px, pz);
+    add(P('cyl', cx + 40, 0, cz - 2, 0.5, 14, 0.5, '#dfe6e9', { solid: false }));
+    add(P('box', cx + 42.5, 11, cz - 2, 5, 3, 0.2, '#3498db', { solid: false, a: 'flag' }));
+  },
+
+  bathroom({ r, cx, cz, add, mark }) {
+    for (let i = 0; i < 8; i++) add(P('box', cx - 49 + i * 14, 0.1, cz, 0.4, 0.05, 108, '#b5d8e6', { solid: false })); // tiles
+    const tx = cx + 26, tz = cz - 26; // giant bathtub with bubbles
+    add(P('box', tx, 0, tz, 44, 10, 22, '#ffffff'));
+    add(P('box', tx, 9, tz, 40, 0.5, 18, '#7fd3ff', { solid: false, a: 'water' }));
+    for (let i = 0; i < 9; i++) add(P('sph', tx - 16 + r() * 32, 9.5, tz - 6 + r() * 12, 3 + r() * 3, 3 + r() * 2, 3 + r() * 3, '#f4fbff', { solid: false, a: 'bob' }));
+    add(P('box', tx + 10, 9.2, tz, 4, 3, 4, '#ffd32a', { solid: false, a: 'bob' }));
+    add(P('sph', tx + 10, 12, tz - 1, 2.6, 2.6, 2.6, '#ffd32a', { solid: false, a: 'bob' }));
+    add(P('cone', tx + 10, 12.8, tz - 3, 1.2, 1.2, 1.2, '#ff9f1a', { solid: false, a: 'bob' }));
+    mark('Bubble Bath', '🛁', tx, tz);
+    const wx = cx - 30, wz = cz - 28; // toilet
+    add(P('cyl', wx, 0, wz, 12, 7, 14, '#ffffff'));
+    add(P('box', wx, 0, wz - 9, 12, 16, 5, '#f1f2f6'));
+    add(P('cyl', wx, 7, wz, 11, 0.6, 13, '#74b9ff', { solid: false }));
+    mark('Giant Toilet', '🚽', wx, wz);
+    const kx = cx + 30, kz = cz + 32; // sink + toothbrush
+    add(P('box', kx, 0, kz, 20, 12, 12, '#dfe6e9'));
+    add(P('box', kx, 12, kz, 16, 0.5, 8, '#b2ebf2', { solid: false }));
+    add(P('box', kx - 16, 0, kz, 3, 22, 2, '#1dd1a1', { ry: 0.2 }));
+    add(P('box', kx - 16, 22, kz, 3.5, 3, 3, '#ffffff', { solid: false, ry: 0.2 }));
+    mark('Sink', '🪥', kx, kz);
+    add(P('cyl', cx - 32, 0, cz + 30, 6, 10, 6, '#ff6bcb'));
+    add(P('sph', cx - 32, 10, cz + 30, 7, 3, 7, '#ffffff', { solid: false }));
+  },
+
+  kitchen({ r, cx, cz, add, mark }) {
+    const tx = cx, tz = cz; // giant table
+    add(P('box', tx, 16, tz, 40, 2, 26, '#c68642'));
+    for (const [dx, dz] of [[-18, -11], [18, -11], [-18, 11], [18, 11]]) add(P('box', tx + dx, 0, tz + dz, 2.5, 16, 2.5, '#9c6630'));
+    add(P('cyl', tx - 8, 18, tz, 12, 4, 12, '#ffffff', { solid: false }));
+    add(P('cyl', tx - 8, 21, tz, 10, 0.6, 10, '#f5e6c8', { solid: false }));
+    for (let i = 0; i < 8; i++) add(P('sph', tx - 12 + r() * 8, 21.4, tz - 4 + r() * 8, 1.4, 1, 1.4, ['#ff6b6b', '#feca57', '#1dd1a1'][i % 3], { solid: false }));
+    add(P('box', tx + 10, 18, tz + 4, 6, 12, 4, '#ff7675', { solid: false }));
+    mark('Cereal Table', '🥣', tx, tz);
+    const fx = cx - 38, fz = cz - 34; // fridge
+    add(P('box', fx, 0, fz, 16, 34, 14, '#e3eaf2'));
+    add(P('box', fx + 8.1, 12, fz - 3, 0.6, 10, 1, '#95a5a6', { solid: false }));
+    add(P('box', fx, 21, fz + 7.1, 16, 0.3, 0.2, '#95a5a6', { solid: false }));
+    mark('Fridge', '🧊', fx, fz);
+    const sx = cx + 36, sz = cz - 34; // stove + pan
+    add(P('box', sx, 0, sz, 20, 14, 16, '#34495e'));
+    add(P('cyl', sx - 4, 14, sz, 9, 1, 9, '#2d3436', { solid: false }));
+    add(P('cyl', sx - 4, 15, sz, 5, 0.4, 5, '#ffeaa7', { solid: false }));
+    add(P('sph', sx - 4, 15.3, sz, 2, 1, 2, '#fdcb6e', { solid: false }));
+    add(P('box', sx + 5, 14, sz, 3, 0.2, 3, '#ff3d00', { solid: false, e: '#ff3d00', a: 'lava' }));
+    mark('Stove', '🍳', sx, sz);
+    const dx = cx + 34, dz = cz + 34; // donut + cupcake treats
+    add(P('cyl', dx, 0, dz, 16, 5, 16, '#ff9ff3'));
+    add(P('cyl', dx, 0, dz, 5, 5.2, 5, '#f3e0c0', { solid: false }));
+    mark('Giant Donut', '🍩', dx, dz);
+  },
+
+  bedroom({ r, cx, cz, add, mark }) {
+    add(P('cyl', cx, 0.1, cz, 70, 0.1, 70, '#ffc7e0', { solid: false })); // round rug
+    const bx = cx - 26, bz = cz - 26; // bed
+    add(P('box', bx, 0, bz, 34, 8, 48, '#6c5ce7'));
+    add(P('box', bx, 8, bz + 4, 32, 3, 38, '#a29bfe', { solid: false }));
+    add(P('box', bx, 8, bz - 19, 20, 4, 7, '#ffffff', { solid: false }));
+    add(P('box', bx, 0, bz - 24.5, 34, 18, 2, '#4834d4'));
+    mark('Big Bed', '🛏️', bx, bz);
+    const tx = cx + 28, tz = cz - 20; // teddy bear
+    add(P('sph', tx, 0, tz, 12, 12, 10, '#c08552'));
+    add(P('sph', tx, 10, tz, 9, 9, 9, '#c08552', { solid: false }));
+    for (const d of [-3.5, 3.5]) add(P('sph', tx + d, 17, tz, 3, 3, 3, '#a0673f', { solid: false }));
+    add(P('sph', tx, 12, tz - 4.2, 3, 2.4, 1.6, '#e8c39e', { solid: false }));
+    mark('Teddy Bear', '🧸', tx, tz);
+    const colors = ['#ff4d4d', '#feca57', '#1dd1a1', '#54a0ff'];
+    for (let i = 0; i < 10; i++) add(P('box', cx - 30 + r() * 60, 0, cz + 18 + r() * 30, 5, 5, 5, colors[i % 4], { ry: r() * 1.5 })); // toy blocks
+    add(P('box', cx + 32, 0, cz + 34, 5, 5, 5, colors[0]));
+    add(P('box', cx + 32, 5, cz + 34, 5, 5, 5, colors[1]));
+    add(P('box', cx + 32, 10, cz + 34, 5, 5, 5, colors[3]));
+    mark('Toy Blocks', '🧱', cx + 32, cz + 34);
+    add(P('cyl', cx + 44, 0, cz + 4, 1, 20, 1, '#dfe6e9', { solid: false })); // lamp
+    add(P('cone', cx + 44, 18, cz + 4, 8, 7, 8, '#fff3b0', { solid: false, e: '#ffe066' }));
+  },
+
+  playground({ r, cx, cz, add, mark }) {
+    const sx = cx - 20, sz = cz - 22; // slide tower
+    add(P('box', sx, 0, sz, 10, 10, 10, '#54a0ff'));
+    add(P('pyr', sx, 10, sz, 12, 6, 12, '#ff4d4d', { solid: false }));
+    for (let i = 0; i < 5; i++) add(P('box', sx - 7, i * 2, sz - 4 + i * 0, 4, 2, 2, '#feca57'));
+    for (let i = 0; i < 8; i++) add(P('box', sx + 7 + i * 2, 10 - i * 1.25, sz, 2.2, 0.6, 5, '#feca57', { solid: false }));
+    mark('Slide', '🛝', sx, sz);
+    const wx = cx + 26, wz = cz - 24; // swings
+    for (const dx of [-12, 12]) add(P('cyl', wx + dx, 0, wz, 1, 14, 1, '#e17055', { solid: false }));
+    add(P('box', wx, 14, wz, 26, 1, 1, '#e17055', { solid: false }));
+    for (const dx of [-5, 5]) add(P('box', wx + dx, 3, wz, 4, 0.5, 2, '#2d3436', { solid: false, a: 'flag' }));
+    mark('Swings', '🎠', wx, wz);
+    const bx = cx + 24, bz = cz + 28; // sandbox
+    add(P('box', bx, 0, bz, 26, 1.4, 26, '#b9844f'));
+    add(P('box', bx, 1.4, bz, 23, 0.2, 23, '#f6e3a1', { solid: false }));
+    add(P('cone', bx - 3, 1.6, bz + 2, 7, 4, 7, '#f6e3a1', { solid: false }));
+    add(P('box', bx + 6, 1.6, bz - 5, 3, 2.5, 3, '#ff6bcb', { solid: false }));
+    mark('Sandbox', '🏖️', bx, bz);
+    add(P('cyl', cx - 30, 0, cz + 28, 16, 1, 16, '#ff9f43', { a: 'spin' })); // merry-go-round
+    add(P('cyl', cx - 30, 1, cz + 28, 1, 5, 1, '#dfe6e9', { solid: false }));
+  },
+
+  stadium({ cx, cz, add, mark }) {
+    add(P('box', cx, 0.1, cz, 70, 0.05, 44, '#4cbb5a', { solid: false }));
+    add(P('box', cx, 0.15, cz, 0.6, 0.05, 44, '#ffffff', { solid: false }));
+    add(P('cyl', cx, 0.15, cz, 14, 0.04, 14, '#ffffff', { solid: false }));
+    add(P('cyl', cx, 0.16, cz, 13, 0.05, 13, '#4cbb5a', { solid: false }));
+    for (const s of [-1, 1]) {
+      const gx = cx + s * 35;
+      add(P('box', gx, 0, cz - 7, 1, 8, 1, '#ffffff'));
+      add(P('box', gx, 0, cz + 7, 1, 8, 1, '#ffffff'));
+      add(P('box', gx, 8, cz, 1, 1, 15, '#ffffff', { solid: false }));
+      add(P('box', gx + s * 3, 0, cz, 0.2, 8, 15, '#dfe6e9', { solid: false }));
+    }
+    mark('Goals', '🥅', cx + 35, cz);
+    add(P('sph', cx + 6, 0, cz + 4, 3, 3, 3, '#ffffff', { a: 'bob' }));
+    mark('Soccer Ball', '⚽', cx + 6, cz + 4);
+    for (let row = 0; row < 4; row++) { // stands with fans
+      add(P('box', cx, row * 3, cz - 34 - row * 4, 90, 3, 4, '#636e72'));
+      for (let i = 0; i < 14; i++) add(P('box', cx - 42 + i * 6.5, row * 3 + 3, cz - 34 - row * 4, 1.6, 2, 1.2, ['#e74c3c', '#3498db', '#f1c40f', '#ffffff'][(i + row) % 4], { solid: false, a: 'bob' }));
+    }
+    mark('Stands', '🏟️', cx, cz - 40);
+    for (const s of [-1, 1]) {
+      add(P('cyl', cx + s * 48, 0, cz + 40, 1.2, 30, 1.2, '#b2bec3', { solid: false }));
+      add(P('box', cx + s * 48, 30, cz + 40, 8, 4, 2, '#ffffff', { solid: false, e: '#fffbe6' }));
+    }
+  },
+
+  space({ r, cx, cz, add, mark }) {
+    for (let i = 0; i < 10; i++) { // craters
+      const x = cx - 45 + r() * 90, z = cz - 45 + r() * 90, s = 6 + r() * 10;
+      if (Math.hypot(x - cx, z - cz) < 20) continue;
+      add(P('cyl', x, 0.1, z, s, 0.4, s, '#6b6b7b', { solid: false }));
+    }
+    const rx = cx, rz = cz; // rocket
+    add(P('cyl', rx, 0, rz, 9, 34, 9, '#f5f6fa'));
+    add(P('cone', rx, 34, rz, 9, 12, 9, '#e84118', { solid: false }));
+    add(P('sph', rx, 22, rz - 4.4, 3.4, 3.4, 1, '#74b9ff', { solid: false, e: '#74b9ff' }));
+    for (let i = 0; i < 3; i++) { const a = (i * Math.PI * 2) / 3; add(P('box', rx + Math.cos(a) * 5.5, 0, rz + Math.sin(a) * 5.5, 1, 10, 5, '#e84118', { solid: false, ry: -a })); }
+    add(P('cone', rx, -0.2, rz, 6, 3, 6, '#ff9f1a', { solid: false, e: '#ff6b00', a: 'lava' }));
+    mark('Rocket', '🚀', rx, rz);
+    const dx = cx - 30, dz = cz + 30;
+    add(P('dome', dx, 0, dz, 26, 13, 26, '#dfe6e9'));
+    add(P('box', dx, 0, dz - 13, 6, 7, 3, '#b2bec3'));
+    mark('Moon Base', '🛸', dx, dz);
+    const sx = cx + 34, sz = cz - 30; // satellite dish
+    add(P('cyl', sx, 0, sz, 2, 10, 2, '#b2bec3'));
+    add(P('dome', sx, 10, sz, 14, 4, 14, '#ffffff', { solid: false, a: 'spin' }));
+    mark('Satellite', '📡', sx, sz);
+    add(P('sph', cx + 38, 26, cz + 38, 10, 10, 10, '#4a90e2', { solid: false, e: '#1e3799', a: 'spin' })); // floating planet
+    add(P('disc', cx + 38, 30.5, cz + 38, 18, 0.5, 18, '#f8c291', { solid: false, a: 'spin' }));
+  },
+
+  jungle({ r, cx, cz, add, mark }) {
+    for (let i = 0; i < 16; i++) {
+      const x = cx - 50 + r() * 100, z = cz - 50 + r() * 100;
+      if (Math.hypot(x - (cx + 18), z - (cz - 18)) < 18 || Math.hypot(x - (cx - 22), z - (cz + 26)) < 16) continue;
+      add(P('cyl', x, 0, z, 2, 16, 2, '#6d4c2f'));
+      add(P('sph', x, 13, z, 12, 8, 12, i % 2 ? '#1e8e3e' : '#27ae60', { solid: false }));
+    }
+    const tx = cx + 18, tz = cz - 18; // temple
+    for (let i = 0; i < 4; i++) add(P('box', tx, i * 5, tz, 30 - i * 6, 5, 30 - i * 6, i % 2 ? '#7f8c6d' : '#95a37e'));
+    add(P('box', tx, 20, tz, 4, 3, 4, '#f1c40f', { solid: false, e: '#f39c12', a: 'blink' }));
+    mark('Lost Temple', '🛕', tx, tz);
+    const wx = cx - 22, wz = cz + 26; // waterfall pond
+    add(P('cyl', wx, 0.05, wz, 24, 0.3, 24, '#2e86de', { solid: false, a: 'water' }));
+    add(P('box', wx, 0, wz - 13, 20, 18, 6, '#6b705c'));
+    add(P('box', wx, 1, wz - 9.8, 8, 17, 0.4, '#74b9ff', { solid: false, a: 'water' }));
+    mark('Waterfall', '🌊', wx, wz);
+    const px = cx - 36, pz = cz - 34; // parrot perch
+    add(P('cyl', px, 0, pz, 1.2, 12, 1.2, '#6d4c2f', { solid: false }));
+    add(P('sph', px, 12, pz, 2.4, 3, 2.4, '#e74c3c', { solid: false, a: 'bob' }));
+    add(P('cone', px, 11, pz + 1.8, 1.8, 3, 1.8, '#3498db', { solid: false, a: 'bob' }));
+  },
+
+  desert({ r, cx, cz, add, mark }) {
+    const px = cx + 16, pz = cz - 18;
+    add(P('pyr', px, 0, pz, 50, 32, 50, '#e1b05c'));
+    mark('Pyramid', '🔺', px, pz);
+    for (let i = 0; i < 9; i++) {
+      const x = cx - 50 + r() * 100, z = cz - 50 + r() * 100;
+      if (Math.hypot(x - px, z - pz) < 32 || Math.hypot(x - (cx - 24), z - (cz + 26)) < 18) continue;
+      add(P('cyl', x, 0, z, 2.4, 10, 2.4, '#2f9e44'));
+      add(P('cyl', x + 2.4, 4, z, 1.4, 4, 1.4, '#2f9e44', { solid: false }));
+      add(P('sph', x, 10, z, 2.4, 2, 2.4, '#2f9e44', { solid: false }));
+    }
+    const ox = cx - 24, oz = cz + 26; // oasis
+    add(P('cyl', ox, 0.05, oz, 22, 0.3, 22, '#4fc3f7', { solid: false, a: 'water' }));
+    for (const [dx, dz] of [[-12, -8], [12, 6], [0, 13]]) {
+      add(P('cyl', ox + dx, 0, oz + dz, 1.3, 13, 1.3, '#a0522d'));
+      for (let k = 0; k < 4; k++) add(P('box', ox + dx, 13, oz + dz, 9, 0.5, 2.2, '#27ae60', { solid: false, ry: (k * Math.PI) / 4 }));
+    }
+    mark('Oasis', '🌴', ox, oz);
+    const kx = cx + 36, kz = cz + 34; // camel
+    add(P('box', kx, 6, kz, 5, 5, 12, '#c8a165'));
+    add(P('sph', kx, 10, kz, 4, 4, 5, '#c8a165', { solid: false }));
+    add(P('box', kx, 8, kz - 7, 2, 7, 2, '#c8a165', { solid: false }));
+    add(P('box', kx, 14, kz - 8, 2.5, 2.5, 4, '#c8a165', { solid: false }));
+    for (const [dx, dz] of [[-2, -4], [2, -4], [-2, 4], [2, 4]]) add(P('box', kx + dx, 0, kz + dz, 1.2, 6, 1.2, '#b08a52'));
+    mark('Camel', '🐫', kx, kz);
+  },
+
+  arcade({ r, cx, cz, add, mark }) {
+    const neon = ['#ff2e97', '#00e5ff', '#b2ff59', '#ffea00', '#d500f9'];
+    for (let i = 0; i < 7; i++) add(P('box', cx - 45 + i * 15, 0.1, cz, 0.6, 0.05, 108, neon[i % 5], { solid: false, e: neon[i % 5], a: 'blink' }));
+    for (let i = 0; i < 6; i++) { // arcade cabinets
+      const x = cx - 40 + i * 9, z = cz - 38;
+      add(P('box', x, 0, z, 6, 14, 6, '#1e1b3a'));
+      add(P('box', x, 8, z + 3.1, 4.4, 4, 0.2, neon[i % 5], { solid: false, e: neon[i % 5], a: 'blink' }));
+      add(P('box', x, 14, z, 6.2, 2, 6.2, neon[(i + 2) % 5], { solid: false, e: neon[(i + 2) % 5] }));
+    }
+    mark('Arcade Games', '🕹️', cx - 18, cz - 38);
+    const clx = cx + 30, clz = cz - 26; // claw machine
+    add(P('box', clx, 0, clz, 14, 6, 14, '#ff2e97'));
+    add(P('box', clx, 6, clz, 14, 14, 14, '#bfe9ff', { solid: false }));
+    for (let i = 0; i < 8; i++) add(P('sph', clx - 4 + r() * 8, 6, clz - 4 + r() * 8, 3, 3, 3, neon[i % 5], { solid: false }));
+    add(P('box', clx, 20, clz, 15, 2, 15, '#ff2e97', { solid: false, e: '#ff2e97' }));
+    add(P('cyl', clx, 14, clz, 0.4, 6, 0.4, '#dfe6e9', { solid: false, a: 'bob' }));
+    mark('Claw Machine', '🧸', clx, clz);
+    const dx = cx + 10, dz = cz + 28; // dance floor
+    for (let i = 0; i < 16; i++) add(P('box', dx - 12 + (i % 4) * 8, 0, dz - 12 + Math.floor(i / 4) * 8, 7.6, 0.4, 7.6, neon[(i * 3) % 5], { solid: false, e: neon[(i * 3) % 5], a: 'blink' }));
+    mark('Dance Floor', '🪩', dx, dz);
+    add(P('sph', dx, 26, dz, 5, 5, 5, '#dfe6e9', { solid: false, e: '#ffffff', a: 'spin' }));
   },
 };
 

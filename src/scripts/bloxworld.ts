@@ -279,7 +279,7 @@ function drawMap(t = 0, reveal?: { gu: number; gv: number; pu: number; pv: numbe
     mctx.fillText(z.emoji, px(c.u), px(c.v) - S * 0.02);
     mctx.globalAlpha = 1;
     mctx.font = `600 ${S * 0.028}px Fredoka, system-ui`;
-    mctx.fillStyle = z.type === 'spooky' || z.type === 'volcano' ? '#fff' : '#1b1f2a';
+    mctx.fillStyle = ['spooky', 'volcano', 'arcade', 'jungle'].includes(z.type) ? '#fff' : '#1b1f2a';
     mctx.fillText(z.name, px(c.u), px(c.v) + S * 0.03);
   }
   mctx.font = `${S * 0.032}px system-ui`;
@@ -350,7 +350,8 @@ function guess() {
   $('bw-mapclose').hidden = true;
   $('bw-confirm').hidden = true;
   const truth = toMap(player.x, player.z);
-  const g = pin ? fromMap(pin.u, pin.v) : null;
+  const guessPin = pin; // keep a copy: the reveal animation keeps running after 'Next round' clears `pin`
+  const g = guessPin ? fromMap(guessPin.u, guessPin.v) : null;
   const dist = g ? Math.hypot(g.x - player.x, g.z - player.z) : Infinity;
   const pts = g ? bloxScore(dist) : 0;
   const zone = world.zones.find((z: any) => Math.abs(player.x - z.cx) <= 60 && Math.abs(player.z - z.cz) <= 60);
@@ -372,7 +373,8 @@ function guess() {
   cancelAnimationFrame(mapAnim);
   const tick = () => {
     const k = Math.min(1, (performance.now() - t0) / 900);
-    drawMap(9, g ? { gu: pin!.u, gv: pin!.v, pu: truth.u, pv: truth.v, k } : { gu: truth.u, gv: truth.v, pu: truth.u, pv: truth.v, k: 1 });
+    if (state !== 'reveal') return;
+    drawMap(9, guessPin ? { gu: guessPin.u, gv: guessPin.v, pu: truth.u, pv: truth.v, k } : { gu: truth.u, gv: truth.v, pu: truth.u, pv: truth.v, k: 1 });
     if (k < 1) mapAnim = requestAnimationFrame(tick);
   };
   tick();
