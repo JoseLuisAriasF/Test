@@ -9,7 +9,7 @@ export const SPEED = 16;
 export const BOUNCE = 82; // bounce pads: ~17 studs high
 export const CP_EVERY = 10; // a checkpoint every 10 platforms
 export const RACE_GOAL = 50; // PvP: first to platform 50 wins
-export const MIN_MS_PER_PLAT = 300; // server plausibility: nobody clears a platform faster than this
+export const MIN_MS_PER_PLAT = 400; // server plausibility: nobody clears a platform faster than this (a jump alone is ~0.5 s)
 // Guardian angel: pure luck, but a little luckier every time you fall in the same stage (so nobody gets stuck
 // feeling unlucky): 10% on the first fall, +8% per extra fall, never more than 50%.
 export const angelChance = (fallsThisStage) => Math.min(0.5, 0.1 + 0.08 * Math.max(0, fallsThisStage - 1));

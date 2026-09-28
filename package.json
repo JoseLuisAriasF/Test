@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && node scripts/headers.mjs",
     "preview": "astro preview",
     "update": "node scripts/update.mjs",
     "test": "node scripts/codes.test.mjs && node scripts/rounds.test.mjs && node scripts/google.test.mjs && node scripts/avatar.test.mjs && node scripts/explore.test.mjs",

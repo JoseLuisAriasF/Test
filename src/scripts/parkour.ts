@@ -203,7 +203,7 @@ type Racer = {
   onGround: boolean; stand: Plat | null; standPos: { x: number; z: number } | null; coyote: number; buffer: number;
   at: number; best: number; cp: number; falls: number; cpFalls: number; angels: number;
   mode: 'wait' | 'play' | 'fall' | 'angel' | 'done'; fallT: number; ts: number; squash: number;
-  keys?: Keys; jumpDown: boolean; lucky?: boolean; camera: THREE.PerspectiveCamera; cam: { yaw: number; pitch: number; dist: number; manual: number; pos: THREE.Vector3; look: THREE.Vector3; fov: number; freeze: THREE.Vector3 | null };
+  keys?: Keys; jumpDown: boolean; lucky?: boolean; bestPos?: { x: number; y: number; z: number }; camera: THREE.PerspectiveCamera; cam: { yaw: number; pitch: number; dist: number; manual: number; pos: THREE.Vector3; look: THREE.Vector3; fov: number; freeze: THREE.Vector3 | null };
   view: HTMLElement; net?: { x: number; y: number; z: number; f: number; s: number; a: number };
 };
 let racers: Racer[] = [];
@@ -466,6 +466,7 @@ async function start(m: Mode, seed?: string) {
   course.ensure(40);
   show(null);
   if (m === 'weekly' || m === 'online') profile = await loadProfile(true);
+  if (m === 'weekly' && saved()) fetch('/api/parkour/start', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(saved()) }).catch(() => {});
   else profile ??= await loadProfile(false);
   const me = newRacer(profile?.name ?? 'You', $('pk-v0'), KEYS_SOLO);
   racers = [me];
@@ -603,7 +604,7 @@ function land(r: Racer, p: Plat) {
   if (hard) poof(r.x, p.y, r.z);
   if (p.i >= 0) {
     r.at = p.i;
-    if (p.i > r.best) { r.best = p.i; updateHud(r); onProgress(r); }
+    if (p.i > r.best) { r.best = p.i; r.bestPos = { x: r.x, y: r.y, z: r.z }; updateHud(r); onProgress(r); }
   }
   if (p.type === 'fade' && !fades.has(p.i)) fades.set(p.i, T);
   if (p.type === 'bounce') {
@@ -692,7 +693,7 @@ async function submit() {
   const best = read(`week-${weekOf()}`) ?? 0;
   if (r.best > best) write(`week-${weekOf()}`, r.best);
   try {
-    const res = await fetch('/api/parkour', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...saved(), wk: weekOf(), score: r.best, ms: Math.round(performance.now() - runStart) }) });
+    const res = await fetch('/api/parkour', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...saved(), wk: weekOf(), score: r.best, ...r.bestPos }) });
     return res.ok ? await res.json() : null;
   } catch { return null; }
 }

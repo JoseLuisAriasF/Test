@@ -36,7 +36,7 @@ export default {
       if (req.method !== 'POST') return Response.json({ error: 'POST only' }, { status: 405 });
       return lb(env).fetch(req);
     }
-    if (path === '/api/parkour') {
+    if (path === '/api/parkour' || path === '/api/parkour/start') {
       if (req.method !== 'POST') return Response.json({ error: 'POST only' }, { status: 405 });
       return lb(env).fetch(req);
     }
@@ -307,6 +307,7 @@ export class Leaderboard extends DurableObject {
     for (const col of ['pkelo INTEGER DEFAULT 1000', 'pkwins INTEGER DEFAULT 0', 'pkgames INTEGER DEFAULT 0']) {
       try { this.sql.exec(`ALTER TABLE p ADD COLUMN ${col}`); } catch {} // already there
     }
+    this.sql.exec('CREATE TABLE IF NOT EXISTS pkrun (id TEXT PRIMARY KEY, wk INTEGER, t0 INTEGER)'); // server-timed weekly runs
     this.sql.exec('CREATE TABLE IF NOT EXISTS pk (wk INTEGER, id TEXT, score INTEGER, ms INTEGER, at INTEGER, PRIMARY KEY (wk, id))');
   }
   row(id) {
@@ -394,12 +395,23 @@ export class Leaderboard extends DurableObject {
       const rows = this.sql.exec('SELECT * FROM p WHERE ranked >= ? ORDER BY elo DESC, wins DESC, id ASC LIMIT 100', MIN_RANKED).toArray();
       return Response.json({ top: rows.map((r, i) => ({ ...this.view(r, i + 1), stats: undefined, wins: r.wins, ranked: r.ranked })), total: this.sql.exec('SELECT COUNT(*) AS n FROM p WHERE ranked >= ?', MIN_RANKED).one().n });
     }
+    if (path === '/api/parkour/start') {
+      const r = this.auth(body);
+      if (!r) return Response.json({ error: 'Unknown player' }, { status: 401 });
+      this.sql.exec('INSERT INTO pkrun (id, wk, t0) VALUES (?, ?, ?) ON CONFLICT (id) DO UPDATE SET wk = excluded.wk, t0 = excluded.t0', r.id, weekOf(), Date.now());
+      return Response.json({ ok: true });
+    }
     if (path === '/api/parkour') {
       const r = this.auth(body);
       if (!r) return Response.json({ error: 'Unknown player' }, { status: 401 });
-      const wk = weekOf(), score = Math.floor(+body.score), ms = Math.floor(+body.ms);
+      const wk = weekOf(), score = Math.floor(+body.score);
       if (body.wk !== wk) return Response.json({ error: 'A new week started! Play the new course.' }, { status: 409 });
-      if (!(score >= 1 && score <= 5000 && ms >= score * MIN_MS_PER_PLAT && ms < 864e5)) return Response.json({ error: 'Run rejected' }, { status: 400 });
+      // Anti-cheat: the server times the run itself, and the reported spot must be that platform of this week's course.
+      const run = this.sql.exec('SELECT * FROM pkrun WHERE id = ? AND wk = ?', r.id, wk).toArray()[0];
+      const ms = run ? Date.now() - run.t0 : 0;
+      const p = score >= 1 && score <= 5000 && (this.course?.seed === `week${wk}` ? this.course : (this.course = makeCourse(`week${wk}`))).ensure(score + 1)[score];
+      const near = p && Math.hypot(+body.x - p.x, +body.z - p.z) <= 12 && Math.abs(+body.y - p.y) <= 4;
+      if (!near || ms < score * MIN_MS_PER_PLAT || ms > 864e5) return Response.json({ error: 'Run rejected' }, { status: 400 });
       this.sql.exec(
         `INSERT INTO pk (wk, id, score, ms, at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (wk, id) DO UPDATE SET score = excluded.score, ms = excluded.ms, at = excluded.at
          WHERE excluded.score > pk.score OR (excluded.score = pk.score AND excluded.ms < pk.ms)`,
