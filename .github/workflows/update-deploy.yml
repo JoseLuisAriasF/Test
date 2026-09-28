@@ -1,5 +1,8 @@
-name: Update data & deploy
+name: Update data
 
+# Refreshes games/codes/badges/guides every 2 hours and commits them.
+# Publishing is done by Cloudflare Workers Builds, which is connected to this repo
+# and deploys every push to main (no API token stored here).
 on:
   schedule:
     - cron: '7 */2 * * *' # every 2 hours
@@ -12,7 +15,7 @@ permissions:
   models: read # free AI guides via GitHub Models
 
 concurrency:
-  group: deploy
+  group: update
   cancel-in-progress: false
 
 jobs:
@@ -32,21 +35,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Commit data
+      - name: Commit data (Cloudflare deploys it)
         if: github.event_name != 'push'
         run: |
           git config user.name "bibibox-bot"
           git config user.email "bot@users.noreply.github.com"
           git add src/data/games.json
           git diff --cached --quiet || (git commit -m "data: refresh $(date -u +%FT%H:%MZ)" && git push)
-
-      - run: npm run build
-        env:
-          SITE_URL: ${{ vars.SITE_URL }}
-          PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
-
-      - name: Deploy to Cloudflare
-        run: npx wrangler deploy --var GOOGLE_CLIENT_ID:"${{ vars.GOOGLE_CLIENT_ID }}"
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

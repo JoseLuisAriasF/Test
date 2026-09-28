@@ -21,14 +21,13 @@ It commits `src/data/games.json`, builds, and deploys. Games that leave the top 
 
 ## Setup (one time)
 
-1. Push this folder to a GitHub repo (public = unlimited free Actions minutes).
-2. Cloudflare dashboard → My Profile → API Tokens → template **Edit Cloudflare Workers**. Copy the token and your Account ID.
-3. GitHub repo → Settings → Secrets and variables → Actions:
-   - Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
-   - Variables: `SITE_URL` = `https://yourdomain.com`
-4. Actions tab → **Update data & deploy** → Run workflow.
-5. Buy bibibox.xyz in Cloudflare → Domain Registration **before the first deploy**: `wrangler.jsonc` attaches it to the Worker automatically.
-6. Submit `https://yourdomain.com/sitemap-index.xml` in Google Search Console.
+1. Code lives on GitHub. The workflow `Update data` refreshes `src/data/games.json` every 2 hours and commits it.
+2. Cloudflare → Workers & Pages → Create → **Import a repository** → this repo, project name `bibibox`,
+   build command `npm run build`, deploy command `npx wrangler deploy`. Every push to `main` (including the
+   data commits) is built and deployed by Cloudflare. No API token is stored in GitHub.
+3. Domain: add `bibibox.xyz` to Cloudflare (Free plan) and set its nameservers at the registrar to the two
+   Cloudflare gives you. Once active, enable the `routes` line in `wrangler.jsonc`.
+4. Submit `https://bibibox.xyz/sitemap-index.xml` in Google Search Console.
 
 ### Sign in with Google (optional, free)
 
