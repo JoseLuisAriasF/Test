@@ -37,18 +37,23 @@ const ld = [{ '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_N
     <header class="top">
       <div class="wrap">
         <a class="logo" href="/"><b>B</b>{SITE_NAME}</a>
+        {/* isGame true when we're on any minigame page */}
         <nav class="nav" id="nav">
-          <a href="/guessr/" class:list={[{ active: Astro.url.pathname.startsWith('/guessr') }]}>🕵️ RoGuessr</a>
-          <a href="/blox-world/" class:list={[{ active: Astro.url.pathname.startsWith('/blox-world') }]}>🧱 Blox World</a>
-          <a href="/real-world/" class:list={[{ active: Astro.url.pathname.startsWith('/real-world') }]}>🌍 Real World</a>
-          <a href="/parkour/" class:list={[{ active: Astro.url.pathname.startsWith('/parkour') }]}>🏃 Parkour</a>
+          <div class="nav-drop">
+            <button class:list={['nav-drop-btn', { active: ['/guessr','/blox-world','/real-world','/parkour'].some(p => Astro.url.pathname.startsWith(p)) }]} type="button">🎮 Minigames</button>
+            <div class="nav-drop-menu">
+              <a href="/guessr/" class:list={[{ active: Astro.url.pathname.startsWith('/guessr') }]}>🕵️ RoGuessr</a>
+              <a href="/blox-world/" class:list={[{ active: Astro.url.pathname.startsWith('/blox-world') }]}>🧱 Blox World</a>
+              <a href="/real-world/" class:list={[{ active: Astro.url.pathname.startsWith('/real-world') }]}>🌍 Real World</a>
+              <a href="/parkour/" class:list={[{ active: Astro.url.pathname.startsWith('/parkour') }]}>🏃 Parkour</a>
+            </div>
+          </div>
           <a href="/codes/" class:list={[{ active: Astro.url.pathname === '/codes/' }]}>🎁 Codes</a>
           <a href="/top/" class:list={[{ active: Astro.url.pathname.startsWith('/top') }]}>🔥 Top 50</a>
-          <span class="nav-sep"></span>
-          <a href="/ranking/" class:list={['nav-sec', { active: Astro.url.pathname.startsWith('/ranking') }]}>🏆 Ranking</a>
-          <a href="/trending/" class:list={['nav-sec', { active: Astro.url.pathname.startsWith('/trending') }]}>📈 Trending</a>
-          <a href="/play/" class:list={['nav-sec', { active: Astro.url.pathname.startsWith('/play') }]}>🎮 Daily Game</a>
-          <a href="/quiz/" class:list={['nav-sec', { active: Astro.url.pathname.startsWith('/quiz') }]}>✨ Quiz</a>
+          <a href="/ranking/" class:list={[{ active: Astro.url.pathname.startsWith('/ranking') }]}>🏆 Ranking</a>
+          <a href="/trending/" class:list={[{ active: Astro.url.pathname.startsWith('/trending') }]}>📈 Trending</a>
+          <a href="/play/" class:list={[{ active: Astro.url.pathname.startsWith('/play') }]}>🎮 Daily Game</a>
+          <a href="/quiz/" class:list={[{ active: Astro.url.pathname.startsWith('/quiz') }]}>✨ Quiz</a>
         </nav>
         <div class="hsearch" data-search>
           <label class="search"><span aria-hidden="true">🔍</span><input type="search" placeholder="Search games…" aria-label="Search games" /></label>
