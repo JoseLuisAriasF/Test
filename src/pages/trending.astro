@@ -1,0 +1,53 @@
+---
+import Base from '../layouts/Base.astro';
+import GameCard from '../components/GameCard.astro';
+import { games, trending, rising, change24, full, monthYear } from '../lib/data.js';
+
+const movers = games.map((g) => ({ g, c: change24(g) })).filter((x) => x.c !== null);
+const gainers = [...movers].sort((a, b) => b.c - a.c).slice(0, 12);
+const losers = [...movers].sort((a, b) => a.c - b.c).slice(0, 6);
+---
+<Base title={`Trending Roblox Games Right Now (${monthYear}) - Rising & New`} description={`The fastest-growing Roblox games today, new up-and-coming experiences and what players are clicking on right now. ${trending.slice(0, 4).map((g) => g.title).join(', ')}.`}>
+  <section class="hero">
+    <span class="pill"><i class="dot"></i>Updated every 2 hours</span>
+    <h1>📈 Trending Roblox games <span class="grad">right now</span></h1>
+    <p>Spot the next big game before everyone else. Player growth is compared with 24 hours ago.</p>
+  </section>
+
+  {gainers.length > 0 && (
+    <section>
+      <div class="sec-head"><div><h2>🚀 Biggest gainers (24h)</h2></div></div>
+      <div class="rows">
+        {gainers.map(({ g, c }, i) => (
+          <a class="row neu" href={`/codes/${g.slug}/`}>
+            <span class="num" style="width:26px">{i + 1}</span>
+            <img src={g.icon} alt="" width="48" height="48" loading="lazy" />
+            <div class="grow"><b>{g.title}</b><span class="small muted">{full(g.playing)} playing · {g.genre}</span></div>
+            <span class={`tag ${c >= 0 ? 'up' : 'down'}`}>{c >= 0 ? '▲' : '▼'} {Math.abs(c)}%</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  {trending.length > 0 && (
+    <section>
+      <div class="sec-head"><div><h2>🔥 Top trending on Roblox</h2><p>What players are clicking on right now.</p></div></div>
+      <div class="grid">{trending.map((g) => <GameCard g={g} />)}</div>
+    </section>
+  )}
+
+  {rising.length > 0 && (
+    <section>
+      <div class="sec-head"><div><h2>🌟 Up-and-coming</h2><p>New games getting popular fast.</p></div></div>
+      <div class="grid">{rising.map((g) => <GameCard g={g} href={`/games/${g.slug}/`} />)}</div>
+    </section>
+  )}
+
+  {losers.length > 0 && losers[0].c < 0 && (
+    <section>
+      <div class="sec-head"><div><h2>📉 Cooling down</h2><p>Fewer players than yesterday.</p></div></div>
+      <div class="grid">{losers.filter((x) => x.c < 0).map(({ g }) => <GameCard g={g} />)}</div>
+    </section>
+  )}
+</Base>

@@ -1,0 +1,107 @@
+---
+import Base from '../layouts/Base.astro';
+import { games, fmt } from '../lib/data.js';
+
+// Famous games only, so the puzzle is guessable. Data is embedded; the daily pick happens in the browser.
+const pool = games.filter((g) => g.visits > 1e8 && g.icon).map((g) => ({ id: g.id, t: g.title, s: g.slug, i: g.icon, g: g.genre, c: g.creator, p: fmt(g.playing), v: fmt(g.visits), y: new Date(g.created).getUTCFullYear() }));
+const names = [...new Set(games.map((g) => g.title))].sort();
+---
+<Base title="Guess the Roblox Game - Daily Puzzle" description="A new mystery Roblox game every day! Guess it from a pixelated icon in 6 tries, keep your streak and challenge your friends.">
+  <section class="hero" style="padding-bottom:10px">
+    <span class="pill">🎮 Daily puzzle <span id="day-no"></span></span>
+    <h1>Guess the <span class="grad">Roblox game</span></h1>
+    <p>The icon gets clearer with every wrong guess. You have 6 tries. New game every day!</p>
+  </section>
+
+  <div class="neu box" style="max-width:520px;margin:0 auto;text-align:center">
+    <canvas id="pic" width="256" height="256" style="width:min(256px,70vw);aspect-ratio:1;border-radius:20px;box-shadow:var(--neu-lg);image-rendering:pixelated;background:var(--bg-2)"></canvas>
+    <div id="tries" style="display:flex;gap:6px;justify-content:center;margin:16px 0" aria-label="Tries"></div>
+    <div id="hints" class="rows" style="text-align:left;margin-bottom:14px"></div>
+    <form id="form" style="display:flex;gap:8px">
+      <label class="search" style="flex:1"><input id="guess" list="names" placeholder="Type a game name…" autocomplete="off" aria-label="Your guess" required /></label>
+      <button class="btn primary">Guess</button>
+    </form>
+    <datalist id="names">{names.map((n) => <option value={n} />)}</datalist>
+    <div id="end" hidden style="margin-top:16px">
+      <h2 id="end-title"></h2>
+      <p id="end-text" class="muted"></p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <a id="end-link" class="btn gold" href="/">🎁 Get its codes</a>
+        <button id="share" class="btn primary" type="button">📤 Share result</button>
+      </div>
+      <p class="small muted" style="margin-top:14px">🔥 Streak: <b id="streak">0</b> · Next game in <b id="next"></b></p>
+    </div>
+  </div>
+
+  <script define:vars={{ pool }}>
+    const MAX = 6;
+    const SIZES = [6, 10, 16, 26, 44, 256]; // pixel blocks across, per try
+    const day = Math.floor(Date.now() / 864e5);
+    // Hash pick: adding a new game to the pool rarely changes today's answer.
+    const h = (s) => { let x = 2166136261; for (const ch of String(s)) x = Math.imul(x ^ ch.charCodeAt(0), 16777619); return x >>> 0; };
+    const answer = pool.reduce((best, g) => (h(day + ':' + g.id) < h(day + ':' + best.id) ? g : best));
+    const hints = [`Genre: ${answer.g}`, `Made by: ${answer.c}`, `Released in ${answer.y}`, `${answer.v} visits · ${answer.p} playing now`, `Starts with "${answer.t[0]}"`];
+    const KEY = 'daily-game';
+    const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { return {}; } };
+    const save = (s) => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {} };
+    let st = load();
+    if (st.day !== day) st = { day, guesses: [], done: false, streak: st.day === day - 1 && st.won ? st.streak : 0 };
+
+    const $ = (id) => document.getElementById(id);
+    $('day-no').textContent = '#' + (day - 20722); // puzzle #1 = 2026-09-27
+    const ctx = $('pic').getContext('2d');
+    const img = new Image();
+    img.src = answer.i;
+    const small = document.createElement('canvas');
+    function draw() {
+      if (!img.complete) return;
+      const n = st.done ? 256 : SIZES[st.guesses.length];
+      small.width = small.height = n;
+      const s = small.getContext('2d');
+      s.drawImage(img, 0, 0, n, n);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(small, 0, 0, n, n, 0, 0, 256, 256);
+    }
+    img.onload = draw;
+
+    function render() {
+      draw();
+      $('tries').innerHTML = Array.from({ length: MAX }, (_, i) => {
+        const g = st.guesses[i];
+        const c = g === undefined ? 'var(--bg-2)' : g.toLowerCase() === answer.t.toLowerCase() ? 'var(--green)' : 'var(--red)';
+        return `<span style="width:34px;height:10px;border-radius:5px;background:${c}"></span>`;
+      }).join('');
+      $('hints').innerHTML = hints.slice(0, st.done ? hints.length : st.guesses.length)
+        .map((t) => `<div class="row inset small" style="padding:8px 12px">💡 ${t.replace(/</g, '&lt;')}</div>`).join('');
+      $('form').hidden = st.done;
+      $('end').hidden = !st.done;
+      if (st.done) {
+        $('end-title').textContent = st.won ? `🎉 You got it in ${st.guesses.length}!` : '😅 So close!';
+        $('end-text').textContent = `Today's game was ${answer.t}.`;
+        $('end-link').href = `/codes/${answer.s}/`;
+        $('end-link').textContent = `🎁 Get free ${answer.t} codes`;
+        $('streak').textContent = st.streak;
+      }
+    }
+    $('form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = $('guess').value.trim();
+      if (!v) return;
+      st.guesses.push(v);
+      $('guess').value = '';
+      const won = v.toLowerCase() === answer.t.toLowerCase();
+      if (won || st.guesses.length >= MAX) Object.assign(st, { done: true, won, streak: won ? st.streak + 1 : 0 });
+      save(st);
+      render();
+    });
+    $('share').addEventListener('click', async () => {
+      const text = `Guess the Roblox Game ${$('day-no').textContent} ${st.won ? st.guesses.length : 'X'}/${MAX}\n${st.guesses.map((g) => (g.toLowerCase() === answer.t.toLowerCase() ? '🟩' : '🟥')).join('')}\n${location.href}`;
+      try { navigator.share ? await navigator.share({ text }) : await navigator.clipboard.writeText(text); $('share').textContent = '✅ Copied!'; } catch {}
+    });
+    setInterval(() => {
+      const ms = (day + 1) * 864e5 - Date.now();
+      $('next').textContent = new Date(ms).toISOString().slice(11, 19);
+    }, 1000);
+    render();
+  </script>
+</Base>

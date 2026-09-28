@@ -1,0 +1,69 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="RoGuessr Ranking - Top Players" description="The best RoGuessr players in the world. Climb from Bronze to Legend in Ranked battles - the top 1 wears the Flaming Crown and Rainbow Rays.">
+  <section class="hero" style="padding-bottom:6px">
+    <span class="pill"><i class="dot"></i>Live ranking</span>
+    <h1>🏆 RoGuessr <span class="grad">Top Players</span></h1>
+    <p>Win Ranked battles to climb. The top spots wear exclusive cosmetics - but only while they hold them!</p>
+  </section>
+
+  <div class="rk-rewards">
+    <div class="neu"><b>👑 #1</b><span>Flaming Crown · Rainbow Rays · Champion Frame</span></div>
+    <div class="neu"><b>🥇 Top 3</b><span>Champion Jersey</span></div>
+    <div class="neu"><b>⭐ Top 10</b><span>Top 10 Crown</span></div>
+  </div>
+
+  <div id="podium" class="rk-podium"></div>
+  <div id="me" class="rk-me" hidden></div>
+  <div id="list" class="rows" style="margin-top:14px"><p class="muted" style="text-align:center">Loading the ranking…</p></div>
+  <div class="center"><a class="btn primary" href="/guessr/">🏆 Play Ranked</a></div>
+
+  <style is:global>
+    .rk-rewards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 10px 0 20px; }
+    .rk-rewards div { padding: 12px 16px; display: grid; }
+    .rk-rewards b { font: 600 1.1rem var(--fun); color: var(--head); }
+    .rk-rewards span { font-size: 13px; color: var(--muted); }
+    .rk-podium { display: flex; justify-content: center; align-items: flex-end; gap: 16px; min-height: 60px; }
+    .rk-podium > a { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 150px; text-align: center; animation: rk-up 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    .rk-podium .n1 { animation-delay: 0.3s; } .rk-podium .n3 { animation-delay: 0.15s; }
+    .rk-podium b { font: 600 15px var(--fun); color: var(--head); }
+    .rk-podium .place { font: 700 2rem var(--fun); }
+    @keyframes rk-up { from { opacity: 0; transform: translateY(40px) scale(0.8); } }
+    .rk-row { display: grid; grid-template-columns: 44px 50px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px 14px; animation: rg-in 0.4s both; }
+    .rk-row .pos { font: 700 1.2rem var(--fun); color: var(--muted); text-align: center; }
+    .rk-row .av { height: 56px; overflow: hidden; }
+    .rk-row .nm b { color: var(--head); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rk-row .elo { font: 700 1.2rem var(--fun); color: var(--head); text-align: right; }
+    .rk-me { margin-top: 16px; padding: 12px 16px; border-radius: 16px; background: linear-gradient(90deg, rgba(109, 127, 240, 0.2), rgba(255, 95, 162, 0.2)); text-align: center; }
+    @keyframes rg-in { from { opacity: 0; transform: translateY(8px); } }
+  </style>
+
+  <script>
+    import { avatarCard, avatarSVG } from '../lib/avatar.js';
+    import { loadProfile, tierHTML } from '../scripts/profile.ts';
+
+    const esc = (s: string) => String(s).replace(/[<>&"]/g, (c) => `&#${c.charCodeAt(0)};`);
+    (async () => {
+      const [data, me] = await Promise.all([fetch('/api/top').then((r) => r.json()).catch(() => null), loadProfile(false)]);
+      const top = data?.top ?? [];
+      const list = document.getElementById('list')!;
+      if (!top.length) {
+        list.innerHTML = '<p class="muted" style="text-align:center">No ranked players yet. Play 3 Ranked battles and be the first #1! 👑</p>';
+      } else {
+        document.getElementById('podium')!.innerHTML = [top[1], top[0], top[2]]
+          .map((p, i) => (p ? `<a class="n${[2, 1, 3][i]}"><span class="place">${['🥈', '🥇', '🥉'][i]}</span>${avatarCard(p.avatar, [70, 96, 64][i])}<b>${esc(p.name)}</b>${tierHTML(p.elo)}<span class="small muted">⭐ ${p.elo}</span></a>` : ''))
+          .join('');
+        list.innerHTML = top.map((p: any, i: number) => `<div class="rk-row neu" style="animation-delay:${Math.min(i, 20) * 0.03}s${me?.id === p.id ? ';outline:2px solid var(--accent)' : ''}">
+          <span class="pos">#${i + 1}</span><span class="av">${avatarSVG(p.avatar, 44)}</span>
+          <span class="nm"><b>${esc(p.name)}${me?.id === p.id ? ' (you)' : ''}</b>${tierHTML(p.elo)} <span class="small muted">🏆 ${p.wins} wins · ${p.ranked} ranked</span></span>
+          <span class="elo">${p.elo}</span></div>`).join('');
+      }
+      const box = document.getElementById('me')!;
+      if (me) {
+        box.hidden = false;
+        box.innerHTML = me.rank ? `You are <b>#${me.rank}</b> in the world with ⭐ ${me.elo} ${tierHTML(me.elo)}` : `Play ${Math.max(0, 3 - me.ranked)} more Ranked battles to appear in the ranking!`;
+      }
+    })();
+  </script>
+</Base>

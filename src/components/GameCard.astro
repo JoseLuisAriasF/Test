@@ -1,14 +1,16 @@
 ---
-import { fmt, newCodes } from '../lib/data.js';
+import { fmt, newCodes, move } from '../lib/data.js';
 const { g, href = `/codes/${g.slug}/`, eager = false } = Astro.props;
 const fresh = newCodes(g);
+const m = move(g);
 ---
 <a class="card" href={href}>
   <div class="cover">
     {g.icon && <img src={g.icon} alt={`${g.title} icon`} width="256" height="256" loading={eager ? 'eager' : 'lazy'} decoding="async" />}
-    {g.rank && <span class="tag rank">#{g.rank}</span>}
-    {g.codes.active.length > 0 && <span class={`tag codes ${fresh ? 'green' : 'accent'}`}>{fresh ? `${fresh} NEW` : `${g.codes.active.length} CODES`}</span>}
+    {g.rank && <span class={`tag rank ${g.rank <= 3 ? 'hot' : ''}`}>{g.rank <= 3 && '🔥 '}#{g.rank}</span>}
+    {g.codes.active.length > 0 && <span class={`tag codes ${fresh ? 'green' : 'accent'}`}>{fresh ? `🎁 ${fresh} NEW` : `🎁 ${g.codes.active.length}`}</span>}
     <span class="tag live"><i class="dot"></i>{fmt(g.playing)}</span>
+    {m === 'new' ? <span class="tag move gold">NEW</span> : m > 0 ? <span class="tag move up">▲{m}</span> : m < 0 ? <span class="tag move down">▼{-m}</span> : null}
   </div>
   <h3>{g.title}</h3>
   <div class="meta">{g.genre}</div>

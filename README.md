@@ -1,4 +1,4 @@
-# BloxPulse
+# BibiBox
 
 Auto-updating Roblox codes & guides site for the 50 most played games right now.
 Astro 7 (static) → Cloudflare Workers static assets. Everything free.
@@ -27,7 +27,7 @@ It commits `src/data/games.json`, builds, and deploys. Games that leave the top 
    - Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
    - Variables: `SITE_URL` = `https://yourdomain.com`
 4. Actions tab → **Update data & deploy** → Run workflow.
-5. Cloudflare → Workers → bloxpulse → Settings → Domains: add your domain.
+5. Buy bibibox.xyz in Cloudflare → Domain Registration **before the first deploy**: `wrangler.jsonc` attaches it to the Worker automatically.
 6. Submit `https://yourdomain.com/sitemap-index.xml` in Google Search Console.
 
 ### Sign in with Google (optional, free)

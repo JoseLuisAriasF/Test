@@ -1,0 +1,167 @@
+---
+import Base from '../layouts/Base.astro';
+const clientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID ?? '';
+---
+<Base title="Avatar Locker: Unlock Roblox-Style Cosmetics" description="Build your Roblox-style avatar and unlock hats, faces, shirts, auras and frames by playing RoGuessr. The rarest cosmetics are the coolest - and #1 in Ranked wears the Flaming Crown.">
+  <section class="hero" style="padding-bottom:6px">
+    <span class="pill">👕 Locker</span>
+    <h1>Build your <span class="grad">avatar</span></h1>
+    <p>Play RoGuessr battles to unlock cosmetics. The harder they are to get, the cooler they look!</p>
+  </section>
+
+  <div class="locker" data-gclient={clientId}>
+    <aside class="neu box lk-side">
+      <div id="preview" class="lk-preview"></div>
+      <h2 id="name" style="margin:10px 0 2px"></h2>
+      <div id="tier"></div>
+      <button id="reroll" class="btn" type="button" style="margin-top:10px">🎲 New name</button>
+      <div id="stats" class="lk-stats"></div>
+      <div id="google" class="lk-google"></div>
+      <a class="btn play" href="/guessr/" style="margin-top:12px">▶ Play RoGuessr</a>
+    </aside>
+
+    <div class="neu box">
+      <div class="lk-row"><b>Body</b><div id="bodies" class="seg"></div></div>
+      <div class="lk-row"><b>Skin</b><div id="skins" class="sw"></div></div>
+      <div class="lk-row"><b>Hair color</b><div id="hairc" class="sw"></div></div>
+      <nav id="tabs" class="toc" style="margin-top:12px"></nav>
+      <div id="items" class="lk-items"></div>
+      <p id="status" class="small muted" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <style is:global>
+    .locker { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 22px; align-items: start; margin-bottom: 40px; }
+    @media (max-width: 860px) { .locker { grid-template-columns: minmax(0, 1fr); } }
+    .lk-side { text-align: center; position: sticky; top: 80px; }
+    @media (max-width: 860px) { .lk-side { position: static; } }
+    .lk-preview { display: grid; place-items: center; min-height: 320px; }
+    .lk-preview .av-card { animation: lk-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    @keyframes lk-pop { from { transform: scale(0.85) rotate(-3deg); } }
+    .lk-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0; text-align: left; font-size: 13px; }
+    .lk-stats div { padding: 8px 10px; border-radius: 12px; box-shadow: var(--inset); }
+    .lk-stats b { display: block; font: 600 1.1rem var(--fun); color: var(--head); }
+    .lk-google { margin-top: 12px; display: grid; justify-items: center; }
+    .lk-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .lk-row > b { min-width: 86px; font-family: var(--fun); color: var(--head); }
+    .seg { display: inline-flex; padding: 4px; border-radius: 12px; background: var(--bg-2); box-shadow: var(--inset); }
+    .seg button { border: 0; background: none; color: var(--muted); font: 600 14px var(--fun); padding: 6px 14px; border-radius: 9px; cursor: pointer; }
+    .seg button.on { background: var(--accent); color: #fff; }
+    .sw { display: flex; gap: 8px; flex-wrap: wrap; }
+    .sw button { width: 30px; height: 30px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: transform 0.15s; }
+    .sw button:hover { transform: scale(1.15); }
+    .sw button.on { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+    .toc button { flex-shrink: 0; padding: 7px 14px; border-radius: 999px; font: 600 14px var(--fun); box-shadow: var(--neu); border: 0; background: var(--bg); color: var(--text); cursor: pointer; }
+    .toc button.on { background: var(--brand); color: #fff; }
+    .lk-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin-top: 8px; }
+    .lk-item { position: relative; display: grid; justify-items: center; gap: 4px; padding: 10px 8px 12px; border-radius: 16px; border: 2px solid transparent; background: var(--bg-2); cursor: pointer; font: inherit; color: var(--text); text-align: center; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); animation: rg-in 0.35s both; }
+    .lk-item:hover { transform: translateY(-4px); }
+    .lk-item.on { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(109, 127, 240, 0.3); }
+    .lk-item .thumb { height: 104px; overflow: hidden; }
+    .lk-item b { font: 600 13px var(--fun); color: var(--head); }
+    .lk-item.locked { cursor: default; }
+    .lk-item.locked .thumb { filter: grayscale(1) brightness(0.45); }
+    .lk-item .lock { position: absolute; top: 34px; left: 50%; translate: -50% 0; font-size: 1.6rem; }
+    .lk-item .req { font-size: 11px; color: var(--muted); line-height: 1.3; }
+    .lk-item .progress { width: 100%; height: 6px; margin-top: 2px; }
+    .lk-item.r-legendary, .lk-item.r-mythic { background: linear-gradient(var(--bg-2), var(--bg-2)) padding-box, conic-gradient(from var(--ang), var(--rc), transparent 40%, var(--rc)) border-box; animation: ang 4s linear infinite, rg-in 0.35s both; }
+    .lk-item.r-legendary { --rc: #ffcc33; } .lk-item.r-mythic { --rc: #ff5fa2; }
+    .lk-item.flash { animation: lk-pop 0.6s; outline: 3px solid var(--gold); }
+    @keyframes rg-in { from { opacity: 0; transform: translateY(8px); } }
+  </style>
+
+  <script>
+    import { ITEMS, SLOTS, BODIES, SKINS, HAIR_COLORS, RARITY, DEFAULT, avatarSVG, avatarCard, isUnlocked, reqText, progress } from '../lib/avatar.js';
+    import { loadProfile, saveAvatar, mountGoogle, tierHTML, logout, type Profile } from '../scripts/profile.ts';
+
+    const $ = (id: string) => document.getElementById(id)!;
+    const clientId = document.querySelector<HTMLElement>('.locker')!.dataset.gclient || '';
+    let p: Profile | null = null;
+    let av: any = { ...DEFAULT };
+    let slot = 'hat';
+    let saveTimer = 0;
+    const tryId = new URLSearchParams(location.search).get('try');
+    if (tryId && ITEMS.some((i) => i.id === tryId)) slot = ITEMS.find((i) => i.id === tryId)!.slot;
+
+    const stats = () => p?.stats ?? { games: 0, wins: 0, correct: 0, streak: 0, perfect: 0, peak: 1000 };
+    const rank = () => p?.rank ?? 0;
+
+    function renderSide() {
+      $('preview').innerHTML = avatarCard(av, 200);
+      $('name').textContent = p?.name ?? 'Guest';
+      $('tier').innerHTML = p ? `${tierHTML(p.elo)} <span class="small muted">⭐ ${p.elo}${p.rank ? ` · #${p.rank}` : ''}</span>` : '';
+      const s = stats();
+      $('stats').innerHTML = [['⚔️', 'Battles', s.games], ['🏆', 'Wins', s.wins], ['✅', 'Correct', s.correct], ['🔥', 'Best streak', s.streak], ['💯', 'Perfect', s.perfect], ['📈', 'Peak', s.peak]]
+        .map(([e, l, v]) => `<div>${e} ${l}<b>${v}</b></div>`).join('');
+    }
+
+    function renderPicker() {
+      $('bodies').innerHTML = Object.entries(BODIES).map(([k, v]) => `<button type="button" data-body="${k}" class="${av.body === k ? 'on' : ''}">${v}</button>`).join('');
+      $('skins').innerHTML = SKINS.map((c, i) => `<button type="button" data-skin="${i}" class="${av.skin === i ? 'on' : ''}" style="background:${c}" aria-label="Skin ${i + 1}"></button>`).join('');
+      $('hairc').innerHTML = HAIR_COLORS.map((c, i) => `<button type="button" data-hc="${i}" class="${av.hairColor === i ? 'on' : ''}" style="background:${c}" aria-label="Hair color ${i + 1}"></button>`).join('');
+      $('tabs').innerHTML = Object.entries(SLOTS).map(([k, v]) => `<button type="button" data-slot="${k}" class="${slot === k ? 'on' : ''}">${v}</button>`).join('');
+      const order = Object.keys(RARITY);
+      $('items').innerHTML = ITEMS.filter((i) => i.slot === slot)
+        .sort((a, b) => order.indexOf(a.r) - order.indexOf(b.r))
+        .map((i, k) => {
+          const open = isUnlocked(i, stats(), rank());
+          const prog = progress(i, stats());
+          // Frames preview on the whole card; everything else on the avatar wearing just that item.
+          const thumb = i.slot === 'frame' ? avatarCard({ ...av, frame: i.id }, 64) : avatarSVG({ ...av, [i.slot]: i.id }, 80);
+          return `<button type="button" class="lk-item r-${i.r} ${av[i.slot] === i.id ? 'on' : ''} ${open ? '' : 'locked'} ${i.id === tryId ? 'flash' : ''}" data-item="${i.id}" style="animation-delay:${k * 0.03}s" ${open ? '' : 'aria-disabled="true"'}>
+            <span class="thumb">${thumb}</span>${open ? '' : '<span class="lock">🔒</span>'}
+            <span class="rar rar-${i.r}">${RARITY[i.r as keyof typeof RARITY].name}</span><b>${i.name}</b>
+            ${open ? '' : `<span class="req">${reqText(i.req)}</span>${prog ? `<span class="progress"><i style="width:${(prog[0] / prog[1]) * 100}%"></i></span><span class="req">${prog[0]}/${prog[1]}</span>` : ''}`}
+          </button>`;
+        }).join('');
+    }
+
+    async function ensure() {
+      p ??= await loadProfile(true);
+      return p;
+    }
+    // Auto-save shortly after each change; the server re-checks every unlock.
+    function changed() {
+      renderSide();
+      renderPicker();
+      clearTimeout(saveTimer);
+      $('status').textContent = 'Saving…';
+      saveTimer = window.setTimeout(async () => {
+        try {
+          if (!(await ensure())) throw new Error('offline');
+          p = await saveAvatar(av);
+          av = { ...p.avatar };
+          $('status').textContent = '✅ Saved';
+          renderSide();
+        } catch { $('status').textContent = '⚠️ Could not save. Check your connection.'; }
+      }, 600);
+    }
+
+    document.querySelector('.locker')!.addEventListener('click', (e) => {
+      const t = (e.target as HTMLElement).closest<HTMLElement>('button');
+      if (!t) return;
+      if (t.dataset.body) { av.body = t.dataset.body; changed(); }
+      else if (t.dataset.skin) { av.skin = +t.dataset.skin; changed(); }
+      else if (t.dataset.hc) { av.hairColor = +t.dataset.hc; changed(); }
+      else if (t.dataset.slot) { slot = t.dataset.slot; renderPicker(); }
+      else if (t.dataset.item && !t.classList.contains('locked')) { av[slot] = t.dataset.item; changed(); }
+    });
+    $('reroll').onclick = async () => { p = await loadProfile(true, { reroll: true }); renderSide(); };
+
+    function renderGoogle() {
+      const box = $('google');
+      if (p?.google) {
+        box.innerHTML = `<p class="small" style="margin:0">✅ Saved to your Google account</p><button type="button" class="btn" style="margin-top:8px;font-size:12px;padding:7px 12px">Sign out on this device</button>`;
+        box.querySelector('button')!.onclick = () => { logout(); location.reload(); };
+      } else mountGoogle(box, clientId, (np) => { p = np; av = { ...np.avatar }; renderSide(); renderPicker(); renderGoogle(); });
+    }
+
+    (async () => {
+      p = await loadProfile(false);
+      if (p) av = { ...p.avatar };
+      renderSide();
+      renderPicker();
+      renderGoogle();
+    })();
+  </script>
+</Base>

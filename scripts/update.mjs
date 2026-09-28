@@ -21,16 +21,30 @@ const byId = (list, k = 'id') => Object.fromEntries((list ?? []).map((x) => [x[k
 const db = JSON.parse(await fs.readFile(FILE, 'utf8').catch(() => '{"games":{}}'));
 
 // 1. Live ranking (sponsored slots excluded)
-const sort = await get(`https://apis.roblox.com/explore-api/v1/get-sort-content?sessionId=${crypto.randomUUID()}&sortId=top-playing-now`);
-const top = sort.games.filter((g) => !g.isSponsored).slice(0, TOP);
-const ids = top.map((g) => g.universeId).join(',');
-console.log(`top ${top.length} games`);
+const session = crypto.randomUUID();
+const sortList = (id, n) =>
+  get(`https://apis.roblox.com/explore-api/v1/get-sort-content?sessionId=${session}&sortId=${id}`).then((r) => r.games.filter((g) => !g.isSponsored).slice(0, n));
+const [topList, trendList, risingList] = await Promise.all([
+  sortList('top-playing-now', TOP),
+  safe(sortList('top-trending', 20), []),
+  safe(sortList('up-and-coming', 25), []),
+]);
+// Trending/rising games get pages too: fresh games = low-competition keywords.
+const tracked = [...new Map([...topList, ...trendList, ...risingList].map((g) => [g.universeId, g])).values()];
+const topRank = new Map(topList.map((g, i) => [g.universeId, i + 1]));
+console.log(`tracking ${tracked.length} games (top ${topList.length}, trending ${trendList.length}, rising ${risingList.length})`);
 
-// 2. Bulk details
+// 2. Bulk details (APIs take 50 ids per call)
+const bulk = async (make, key) => {
+  const out = {};
+  for (let i = 0; i < tracked.length; i += 50)
+    Object.assign(out, byId(await safe(get(make(tracked.slice(i, i + 50).map((g) => g.universeId).join(','))).then((r) => r.data), []), key));
+  return out;
+};
 const [details, icons, thumbs] = await Promise.all([
-  get(`https://games.roblox.com/v1/games?universeIds=${ids}`).then((r) => byId(r.data)),
-  safe(get(`https://thumbnails.roblox.com/v1/games/icons?universeIds=${ids}&size=512x512&format=Webp`).then((r) => byId(r.data, 'targetId')), {}),
-  safe(get(`https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${ids}&countPerUniverse=5&size=768x432&format=Webp`).then((r) => byId(r.data, 'universeId')), {}),
+  bulk((ids) => `https://games.roblox.com/v1/games?universeIds=${ids}`, 'id'),
+  bulk((ids) => `https://thumbnails.roblox.com/v1/games/icons?universeIds=${ids}&size=512x512&format=Webp`, 'targetId'),
+  bulk((ids) => `https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${ids}&countPerUniverse=10&size=768x432&format=Webp`, 'universeId'),
 ]);
 
 // 3. Codes from several guide sites, majority-voted
@@ -75,16 +89,16 @@ async function aiGuide(g) {
 // 5. Merge
 let aiLeft = process.env.GITHUB_TOKEN ? AI_MAX : 0;
 const usedSlugs = new Set(Object.values(db.games).map((g) => g.slug));
-for (const g of Object.values(db.games)) g.rank = null;
+for (const g of Object.values(db.games)) [g.prevRank, g.rank] = [g.rank, null];
 
-for (const [i, t] of top.entries()) {
+for (const [i, t] of tracked.entries()) {
   const d = details[t.universeId];
   if (!d) continue;
   const prev = db.games[t.universeId];
   let slug = prev?.slug ?? (slugify(d.name) || `game-${t.universeId}`);
   if (!prev && usedSlugs.has(slug)) slug += `-${t.universeId}`;
   usedSlugs.add(slug);
-  console.log(`#${i + 1} ${slug}`);
+  console.log(`${i + 1}/${tracked.length} ${slug}`);
 
   const [badges, passes, codeResults] = await Promise.all([
     safe(get(`https://badges.roblox.com/v1/universes/${t.universeId}/badges?limit=100&sortOrder=Desc`).then((r) => r.data), prev?.badges ?? []),
@@ -102,7 +116,7 @@ for (const [i, t] of top.entries()) {
     created: d.created, updated: d.updated, up: t.totalUpVotes, down: t.totalDownVotes,
     icon: icons[t.universeId]?.imageUrl ?? prev?.icon ?? null,
     thumbs: thumbs[t.universeId]?.thumbnails?.filter((x) => x.imageUrl).map((x) => x.imageUrl) ?? prev?.thumbs ?? [],
-    rank: i + 1, seenAt: now.toISOString(),
+    rank: topRank.get(t.universeId) ?? null, seenAt: now.toISOString(),
     badges: badges.map((b) => ({ id: b.id, name: b.displayName || b.name, desc: (b.displayDescription || b.description || '').slice(0, 300), iconId: b.displayIconImageId, awarded: b.statistics?.awardedCount ?? b.awarded ?? 0, rate: b.statistics?.winRatePercentage ?? b.rate ?? 0 }))
       .sort((a, b) => b.awarded - a.awarded).slice(0, 40),
     passes: passes.filter((p) => p.isForSale !== false).map((p) => ({ id: p.id, name: p.displayName || p.name, desc: (p.displayDescription ?? p.desc ?? '').slice(0, 200), price: p.price })).slice(0, 30),
@@ -110,7 +124,7 @@ for (const [i, t] of top.entries()) {
     codeSources: codeResults.length,
   };
   g.peak = Math.max(prev?.peak ?? 0, g.playing);
-  g.history = [...(prev?.history ?? []), [now.toISOString().slice(0, 13), g.playing]].slice(-84);
+  g.history = [...(prev?.history ?? []), [now.toISOString().slice(0, 13), g.playing]].slice(-360); // 30 days at one point per 2h
   g.updates = prev?.updates ?? [];
   if (g.updated && g.updates[0]?.date !== g.updated) {
     const headline = g.description.split('\n').map((l) => l.trim()).find((l) => /update|out now|new|upd|event|season/i.test(l)) ?? '';
@@ -127,6 +141,7 @@ for (const [i, t] of top.entries()) {
 
 // Keep games that dropped out for 120 days: their pages keep ranking in search.
 for (const [id, g] of Object.entries(db.games)) if (now - new Date(g.seenAt) > 120 * 864e5) delete db.games[id];
+db.lists = { trending: trendList.map((g) => g.universeId), rising: risingList.map((g) => g.universeId) };
 db.updatedAt = now.toISOString();
 await fs.mkdir(new URL('.', FILE), { recursive: true });
 await fs.writeFile(FILE, JSON.stringify(db, null, 1));

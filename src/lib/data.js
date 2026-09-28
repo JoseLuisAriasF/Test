@@ -1,11 +1,25 @@
 import db from '../data/games.json';
 
-export const SITE_NAME = 'BloxPulse';
+export const SITE_NAME = 'BibiBox';
 
 export const updatedAt = new Date(db.updatedAt);
 export const games = Object.values(db.games).sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999) || b.playing - a.playing);
 export const top = games.filter((g) => g.rank);
 export const withCodes = games.filter((g) => g.codes.active.length);
+const pick = (ids = []) => ids.map((id) => db.games[id]).filter(Boolean);
+export const trending = pick(db.lists?.trending);
+export const rising = pick(db.lists?.rising);
+
+// Rank movement since the previous run: number of places gained, 'new' for fresh entries.
+export const move = (g) => (!g.rank ? 0 : g.prevRank === null ? 'new' : g.prevRank ? g.prevRank - g.rank : 0);
+// % change in players vs ~24h ago (history has one point per 2h run).
+export function change24(g) {
+  const h = g.history ?? [];
+  const past = h.length > 1 ? h[Math.max(0, h.length - 13)][1] : 0;
+  return past ? Math.round(((g.playing - past) / past) * 100) : null;
+}
+const EMOJI = { Simulation: '🌱', 'Roleplay & Avatar Sim': '🏡', Survival: '🧟', RPG: '⚔️', Action: '💥', Shooter: '🎯', 'Sports & Racing': '🏎️', Shopping: '🛍️', 'Party & Casual': '🎉', 'Obby & Platformer': '🧗', Adventure: '🗺️', Strategy: '🧠', Puzzle: '🧩', Entertainment: '🎬', Education: '📚' };
+export const emoji = (genre) => EMOJI[genre] ?? '🎮';
 
 const DAY = 864e5;
 export const fmt = (n) => new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(n ?? 0);

@@ -1,0 +1,60 @@
+---
+import Base from '../layouts/Base.astro';
+import { top, fmt } from '../lib/data.js';
+
+const list = top.map((g) => ({ t: g.title, s: g.slug, i: g.icon, g: g.genre, p: fmt(g.playing) }));
+// Each answer votes for Roblox genres; the winning genre picks the most played matching games.
+const questions = [
+  { q: 'Pick a superpower!', a: [['⚔️', 'Super strength', 'Action RPG Shooter'], ['🏡', 'Build anything', 'Roleplay & Avatar Sim|Simulation'], ['🧠', 'Genius brain', 'Strategy Puzzle'], ['⚡', 'Super speed', 'Obby & Platformer|Sports & Racing']] },
+  { q: 'Your perfect Saturday?', a: [['🎉', 'Hanging out with friends', 'Roleplay & Avatar Sim|Party & Casual'], ['🐉', 'Beating a giant boss', 'RPG Action'], ['🌱', 'Growing and collecting stuff', 'Simulation'], ['👻', 'Surviving a spooky night', 'Survival']] },
+  { q: 'Choose a pet', a: [['🐶', 'A cute puppy', 'Roleplay & Avatar Sim|Simulation'], ['🦖', 'A T-Rex', 'Survival Action'], ['🐟', 'A rare golden fish', 'Simulation'], ['🦅', 'A racing eagle', 'Sports & Racing|Obby & Platformer']] },
+  { q: 'How do you like to play?', a: [['😌', 'Chill, on my own', 'Simulation Puzzle'], ['👯', 'With my squad', 'Survival Shooter'], ['🏆', 'Competing to win', 'Sports & Racing|Action|Shooter'], ['💬', 'Making new friends', 'Roleplay & Avatar Sim|Party & Casual']] },
+].map((x) => ({ ...x, a: x.a.map(([e, label, genres]) => ({ e, label, genres: genres.includes('|') ? genres.split('|') : genres.split(' ') })) }));
+---
+<Base title="Which Roblox Game Should I Play? Quiz" description="Answer 4 fun questions and find the perfect Roblox game for you, picked from the most played games right now.">
+  <section class="hero" style="padding-bottom:10px">
+    <span class="pill">✨ Takes 20 seconds</span>
+    <h1>Which Roblox game <span class="grad">should you play?</span></h1>
+    <p>Answer 4 quick questions and we'll match you with a game from today's top 50.</p>
+  </section>
+  <div class="neu box" style="max-width:620px;margin:0 auto" id="quiz">
+    {questions.map((q, i) => (
+      <div class="step" data-step={i} hidden={i > 0}>
+        <p class="small muted" style="margin:0">Question {i + 1} of {questions.length}</p>
+        <div class="progress"><i style={`width:${(i / questions.length) * 100}%`}></i></div>
+        <h2 style="margin:18px 0 14px;font-size:1.5rem">{q.q}</h2>
+        <div class="tiles" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+          {q.a.map((a) => <button class="btn" style="justify-content:flex-start;padding:16px;font-size:16px" data-genres={a.genres.join('|')}><span style="font-size:1.6rem">{a.e}</span>{a.label}</button>)}
+        </div>
+      </div>
+    ))}
+    <div id="result" hidden style="text-align:center"></div>
+  </div>
+
+  <script define:vars={{ list }}>
+    const score = {};
+    const steps = [...document.querySelectorAll('.step')];
+    steps.forEach((step, i) => step.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+      for (const g of b.dataset.genres.split('|')) score[g] = (score[g] || 0) + 1;
+      step.hidden = true;
+      if (steps[i + 1]) steps[i + 1].hidden = false; else show();
+    })));
+    function show() {
+      const ranked = [...list].sort((a, b) => (score[b.g] || 0) - (score[a.g] || 0)); // stable: keeps top-50 order on ties
+      const [best, ...more] = ranked.slice(0, 4);
+      const esc = (s) => s.replace(/</g, '&lt;');
+      const r = document.getElementById('result');
+      r.hidden = false;
+      r.innerHTML = `<p class="pill" style="margin:0 auto">🎉 Your perfect match</p>
+        <img src="${best.i}" alt="" width="160" height="160" style="margin:18px auto;border-radius:24px;box-shadow:var(--neu-lg)">
+        <h2 style="font-size:1.8rem">${esc(best.t)}</h2><p class="muted">${esc(best.g)} · ${best.p} playing right now</p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:16px 0">
+          <a class="btn gold" href="/codes/${best.s}/">🎁 Free ${esc(best.t)} codes</a>
+          <a class="btn" href="/games/${best.s}/">📘 Beginner guide</a>
+        </div>
+        <p class="small muted">You might also love:</p>
+        <div class="rows" style="text-align:left">${more.map((g) => `<a class="row inset" href="/codes/${g.s}/"><img src="${g.i}" alt="" width="48" height="48"><div class="grow"><b>${esc(g.t)}</b><span class="small muted">${esc(g.g)}</span></div></a>`).join('')}</div>
+        <button class="btn primary" style="margin-top:16px" onclick="location.reload()">🔄 Try again</button>`;
+    }
+  </script>
+</Base>

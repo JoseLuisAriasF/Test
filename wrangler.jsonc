@@ -1,6 +1,21 @@
 {
-  // Static assets only: no Worker script, so requests are free and unlimited.
-  "name": "bloxpulse",
+  "name": "bibibox",
   "compatibility_date": "2026-09-01",
-  "assets": { "directory": "./dist", "not_found_handling": "404-page" }
+  // Only /api/* runs the Worker (RoGuessr). Everything else is static assets: free and unlimited.
+  "main": "worker/index.js",
+  // Live on bibibox.<account>.workers.dev until bibibox.xyz uses Cloudflare nameservers. Then add:
+  //   "routes": [{ "pattern": "bibibox.xyz", "custom_domain": true }],
+  "workers_dev": true,
+  "assets": { "directory": "./dist", "binding": "ASSETS", "not_found_handling": "404-page", "run_worker_first": ["/api/*"] },
+  "durable_objects": {
+    "bindings": [
+      { "name": "ROOMS", "class_name": "Room" },
+      { "name": "MATCH", "class_name": "Matchmaker" },
+      { "name": "LB", "class_name": "Leaderboard" }
+    ]
+  },
+  // SQLite-backed Durable Objects are available on the Workers Free plan.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room", "Matchmaker", "Leaderboard"] }],
+  // Public OAuth client id from Google Cloud Console (also set PUBLIC_GOOGLE_CLIENT_ID for the site build).
+  "vars": { "GOOGLE_CLIENT_ID": "" }
 }

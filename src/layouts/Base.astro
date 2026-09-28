@@ -19,6 +19,7 @@ const ld = [{ '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_N
     <meta name="theme-color" content="#171b24" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="alternate" type="application/rss+xml" title="New Roblox codes" href="/rss.xml" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={SITE_NAME} />
     <meta property="og:title" content={fullTitle} />
@@ -29,7 +30,7 @@ const ld = [{ '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_N
     <link rel="preconnect" href="https://tr.rbxcdn.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700&display=swap" />
     <script type="application/ld+json" set:html={JSON.stringify(ld)} />
   </head>
   <body>
@@ -37,10 +38,15 @@ const ld = [{ '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_N
       <div class="wrap">
         <a class="logo" href="/"><b>B</b>{SITE_NAME}</a>
         <nav class="nav">
-          <a href="/codes/">Codes</a>
-          <a href="/top/">Top 50 Live</a>
-          <a href="/games/">All Games</a>
+          <a href="/guessr/">🕵️ RoGuessr</a>
+          <a href="/ranking/">🏆 Ranking</a>
+          <a href="/codes/">🎁 Codes</a>
+          <a href="/top/">🔥 Top 50</a>
+          <a href="/trending/">📈 Trending</a>
+          <a href="/play/">🎮 Daily Game</a>
+          <a href="/quiz/">✨ Quiz</a>
         </nav>
+        <a class="hunter" href="/codes/" title="Codes you copied" hidden>🏆 <span data-hunter>0</span> codes</a>
         <div class="hsearch" data-search>
           <label class="search"><span aria-hidden="true">🔍</span><input type="search" placeholder="Search games…" aria-label="Search games" /></label>
           <div class="results neu" hidden></div>
@@ -51,10 +57,15 @@ const ld = [{ '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_N
     <footer>
       <div class="wrap">
         <p>© {new Date().getFullYear()} {SITE_NAME}. Not affiliated with Roblox Corporation. Game data refreshes every 2 hours.</p>
-        <nav><a href="/codes/">All codes</a><a href="/top/">Live ranking</a><a href="/about/">About</a><a href="/privacy/">Privacy</a></nav>
+        <nav><a href="/guessr/">RoGuessr</a><a href="/ranking/">Ranking</a><a href="/avatar/">Avatar</a><a href="/codes/">All codes</a><a href="/trending/">Trending</a><a href="/play/">Daily game</a><a href="/quiz/">Quiz</a><a href="/rss.xml">RSS</a><a href="/top/">Live ranking</a><a href="/about/">About</a><a href="/privacy/">Privacy</a></nav>
       </div>
     </footer>
     <script>
+      // Code Hunter: count of codes this visitor copied (stored only in their browser).
+      try {
+        const n = JSON.parse(localStorage.getItem('copied-codes') || '[]').length;
+        if (n) { document.querySelector('[data-hunter]')!.textContent = String(n); document.querySelector<HTMLElement>('.hunter')!.hidden = false; }
+      } catch {}
       // Global search: lazy-loads a tiny index the first time any search box gets focus.
       let index: { t: string; s: string; i: string; c: number }[] | null = null;
       for (const box of document.querySelectorAll<HTMLElement>('[data-search]')) {

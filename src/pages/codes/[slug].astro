@@ -31,6 +31,7 @@ const schema = [
     <div style="display:grid;gap:24px;min-width:0">
       <div class="neu box" id="active">
         <h2>✅ Working {g.title} codes</h2>
+        {n > 0 && <div style="margin:-4px 0 16px"><span class="small">🏆 Code Hunter: you copied <b data-got>0</b> of {n}</span><div class="progress"><i data-bar></i></div></div>}
         {n ? (
           <div class="rows">
             {active.map((c) => (
@@ -84,7 +85,15 @@ const schema = [
     const KEY = 'copied-codes';
     const read = (): string[] => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; } };
     const copied = new Set(read());
-    for (const el of document.querySelectorAll<HTMLElement>('[data-code]')) {
+    const all = [...document.querySelectorAll<HTMLElement>('[data-code]')];
+    const progress = () => {
+      const got = all.filter((el) => copied.has(el.dataset.code!)).length;
+      const n = document.querySelector('[data-got]'); if (n) n.textContent = String(got);
+      const bar = document.querySelector<HTMLElement>('[data-bar]'); if (bar) bar.style.width = (got / all.length) * 100 + '%';
+      if (got === all.length && all.length && !document.querySelector('[data-done]')) document.querySelector('[data-got]')?.parentElement?.insertAdjacentHTML('beforeend', '<b data-done> 🎉 All collected!</b>');
+    };
+    progress();
+    for (const el of all) {
       const code = el.dataset.code!;
       if (copied.has(code)) el.classList.add('tried');
       el.addEventListener('click', async () => {
@@ -95,6 +104,7 @@ const schema = [
         el.classList.add('tried');
         copied.add(code);
         try { localStorage.setItem(KEY, JSON.stringify([...copied].slice(-500))); } catch {}
+        progress();
         setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1500);
       });
     }
