@@ -14,14 +14,21 @@ const faq = [
   { q: `Why is my ${g.title} code not working?`, a: 'Codes are usually case-sensitive, so copy them exactly (use our copy button). Some codes need a minimum level, only work once per account, or have expired - check the expired list below.' },
   { q: `When do new ${g.title} codes come out?`, a: `New codes usually drop with updates, events and like milestones. The last ${g.title} update was on ${date(g.updated)}.` },
 ];
+const howToSteps = [
+  `Open ${g.title} on Roblox and join a server.`,
+  'Look for a Codes, Shop, Gift or Settings button on the side of the screen or in the menu.',
+  'Paste a code from the list above into the text box.',
+  'Press Redeem / Enter and enjoy your free rewards!',
+];
 const schema = [
   { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
   { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [['Home', '/'], ['Codes', '/codes/'], [`${g.title} Codes`, `/codes/${g.slug}/`]].map(([name, p], i) => ({ '@type': 'ListItem', position: i + 1, name, item: new URL(p, Astro.site).href })) },
+  { '@context': 'https://schema.org', '@type': 'HowTo', name: `How to Redeem ${g.title} Codes`, step: howToSteps.map((t, i) => ({ '@type': 'HowToStep', position: i + 1, text: t })), totalTime: 'PT1M' },
 ];
 ---
 <Base
-  title={`${g.title} Codes (${monthYear}) - ${n ? `${n} Working Codes` : 'Latest Codes'}`}
-  description={n ? `All ${n} working ${g.title} codes for ${monthYear}: ${active.slice(0, 3).map((c) => c.code).join(', ')} and more. Get free ${active[0].reward.toLowerCase()} and see how to redeem them.` : `Latest ${g.title} codes for ${monthYear}, checked every 2 hours. How to redeem, expired codes and tips.`}
+  title={`${g.title} Codes (${monthYear}) - ${n ? `${n} FREE Gift Codes` : 'New Redeem Codes'}`}
+  description={n ? `ALL ${n} working ${g.title} redeem codes for ${monthYear}: ${active.slice(0, 3).map((c) => c.code).join(', ')} + more. Grab free ${active[0].reward.toLowerCase()} NOW before they expire! Updated every 2 hours.` : `NEW ${g.title} redeem codes for ${monthYear} - checked every 2 hours. How to redeem gift codes, full expired list and tips.`}
   image={g.thumbs[0] ?? g.icon}
   schema={schema}
 >
