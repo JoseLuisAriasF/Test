@@ -292,3 +292,9 @@ footer nav + nav { opacity: 0.7; }
 @keyframes mythic { to { background-position: 300% 0; } }
 .tier { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 999px; font: 600 13px var(--fun); background: color-mix(in srgb, var(--tc) 18%, transparent); color: var(--tc); }
 .gsave { margin-top: 12px; }
+/* full screen for the 3D games (real Fullscreen API, or pinned over the page where it isn't allowed) */
+.game:fullscreen { height: 100vh !important; max-height: none; border-radius: 0 !important; }
+.game:-webkit-full-screen { height: 100vh !important; border-radius: 0 !important; }
+.game.fs-fake { position: fixed !important; inset: 0; z-index: 1000; height: 100dvh !important; min-height: 0; border-radius: 0 !important; }
+body.fs-lock { overflow: hidden; }
+.fs-btn { position: absolute; top: 10px; right: 10px; z-index: 6; width: 40px; height: 40px; padding: 0; font-size: 20px; }

@@ -14,12 +14,14 @@
       { "name": "ROOMS", "class_name": "Room" },
       { "name": "MATCH", "class_name": "Matchmaker" },
       { "name": "LB", "class_name": "Leaderboard" },
-      { "name": "RACE", "class_name": "Race" }
+      { "name": "RACE", "class_name": "Race" },
+      { "name": "NIGHT", "class_name": "Night" }
     ]
   },
   // SQLite-backed Durable Objects are available on the Workers Free plan.
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["Room", "Matchmaker", "Leaderboard"] },
-    { "tag": "v2", "new_sqlite_classes": ["Race"] }
+    { "tag": "v2", "new_sqlite_classes": ["Race"] },
+    { "tag": "v3", "new_sqlite_classes": ["Night"] }
   ]
 }

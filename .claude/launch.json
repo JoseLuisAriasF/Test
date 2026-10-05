@@ -1,6 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "preview", "runtimeExecutable": "npx", "runtimeArgs": ["astro", "preview", "--port", "4321"], "port": 4321 }
+    { "name": "preview", "runtimeExecutable": "npx", "runtimeArgs": ["astro", "preview", "--port", "4321"], "port": 4321 },
+    { "name": "full", "runtimeExecutable": "npx", "runtimeArgs": ["wrangler", "dev", "--port", "8787"], "port": 8787 }
   ]
 }

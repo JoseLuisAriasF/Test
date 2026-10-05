@@ -81,6 +81,30 @@ clears `dist/`. Stop it, build, start it again.
   walk along the street (next/prev photo), guess on a MapLibre map with OpenFreeMap tiles (free, no key).
   `scripts/realworld.mjs` rebuilds `src/data/realworld.json` weekly with places that really have 360° coverage.
 
+## Golf Climb (`/golf/`)
+
+A Roblox-style "Golfing Over It with Alva Majo": drag back and release to hit a ball up 10 surreal mountains made of giant
+objects (trees, houses, a giant noob, horses, eagles, elephants, sharks, turtles, donuts, icebergs, satellites… `src/lib/golf.js`),
+each in its own world (`src/scripts/golfworld.ts`). No walls: overshoot and the ball rolls back down the valley.
+Like the original, a **white** ball can be hit again in the air (2 extra hits per flight, bullet time while aiming); it turns
+**black** when it touches anything until it almost stops. A random guardian angel may catch big falls (the original's witch).
+- **Deterministic sim**: fixed 120 Hz, only `+ - * / sqrt`, shots stored as integers. `npm test` runs a solver that proves
+  every ledge of every map is reachable.
+- **Speedrun ranking per map**: `/api/golf/start` gives a nonce (seed of the angel's luck) and starts the server clock;
+  `/api/golf` replays the hits (`[tick, vx, vy]`) on the server and only accepts the run if the ball really sinks, and not faster than its flight.
+- The climb is saved on the device: close the tab and continue later.
+
+## Night Shift (`/typing/`)
+
+Horror typing game in a Roblox-style pizzeria (FNAF-inspired, original characters). Type the prompt before its timer runs out;
+mistakes and timeouts drain power and your animatronic walks to your desk. 12 AM -> 6 AM is a night, nights get faster forever.
+- **Online rooms**: a live list of open rooms (the `Night` Durable Object instance `lobby` is the hub), join one, quick join,
+  or create your own with a link. Max 4 players, bots fill empty seats if the host wants.
+- **Survival** mode: everyone types their own prompts, last one standing wins. The server only relays progress.
+- **Rounds** mode: the same prompt for everyone each round; whoever finishes last (or not in time) loses a heart, most hearts
+  wins (5 hearts, max 15 min). The server times the finishes; bots are computed from the seed on both sides.
+- Prompts, bots and round rules are pure functions in `src/lib/typer.js`, shared by the browser and the Worker.
+
 ## Costs
 
 | Part | Plan | Limit |

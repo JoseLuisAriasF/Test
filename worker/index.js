@@ -10,6 +10,8 @@ import { sanitize, DEFAULT, SKINS } from '../src/lib/avatar.js';
 import { verifyGoogleToken, googleKeys, hashId } from './google.js';
 import { GOOGLE_CLIENT_ID } from '../src/lib/config.js';
 import { weekOf, makeCourse, RACE_GOAL, MIN_MS_PER_PLAT } from '../src/lib/parkour.js';
+import { MAPS as GOLF_MAPS, verifyRun } from '../src/lib/golf.js';
+import { MAX_PLAYERS as NIGHT_MAX, botName, newRounds, roundStart, roundFinish, roundEnd, humansDone, fastForward, ROUND_GAP } from '../src/lib/typer.js';
 
 const ADJ = ['Turbo', 'Sneaky', 'Mega', 'Cosmic', 'Happy', 'Ninja', 'Golden', 'Rapid', 'Brave', 'Lucky', 'Epic', 'Shiny', 'Silly', 'Mighty', 'Pixel', 'Rocket'];
 const ANIMAL = ['Panda', 'Fox', 'Dragon', 'Noob', 'Tiger', 'Penguin', 'Shark', 'Bunny', 'Robot', 'Owl', 'Frog', 'Unicorn', 'Dino', 'Cat', 'Wolf', 'Bee'];
@@ -36,7 +38,7 @@ export default {
       if (req.method !== 'POST') return Response.json({ error: 'POST only' }, { status: 405 });
       return lb(env).fetch(req);
     }
-    if (path === '/api/parkour' || path === '/api/parkour/start') {
+    if (path === '/api/parkour' || path === '/api/parkour/start' || path === '/api/golf' || path === '/api/golf/start') {
       if (req.method !== 'POST') return Response.json({ error: 'POST only' }, { status: 405 });
       return lb(env).fetch(req);
     }
@@ -44,7 +46,11 @@ export default {
       if (req.headers.get('Upgrade') !== 'websocket') return Response.json({ error: 'WebSocket only' }, { status: 426 });
       return env.RACE.get(env.RACE.idFromName(path === '/api/race' ? 'lobby' : path.slice(10))).fetch(req);
     }
-    if (path === '/api/top' || path === '/api/parkour/top') {
+    if (path === '/api/night' || /^\/api\/night\/[A-Z0-9]{5}$/.test(path)) {
+      if (req.headers.get('Upgrade') !== 'websocket') return Response.json({ error: 'WebSocket only' }, { status: 426 });
+      return env.NIGHT.get(env.NIGHT.idFromName(path === '/api/night' ? 'lobby' : path.slice(11))).fetch(req);
+    }
+    if (path === '/api/top' || path === '/api/parkour/top' || path === '/api/golf/top') {
       const cache = caches.default;
       let res = await cache.match(req);
       if (!res) {
@@ -309,6 +315,9 @@ export class Leaderboard extends DurableObject {
     }
     this.sql.exec('CREATE TABLE IF NOT EXISTS pkrun (id TEXT PRIMARY KEY, wk INTEGER, t0 INTEGER)'); // server-timed weekly runs
     this.sql.exec('CREATE TABLE IF NOT EXISTS pk (wk INTEGER, id TEXT, score INTEGER, ms INTEGER, at INTEGER, PRIMARY KEY (wk, id))');
+    // Golf Climb speedruns: one open run per player (server clock + the seed of the angel's luck), best time per map.
+    this.sql.exec('CREATE TABLE IF NOT EXISTS golfrun (id TEXT PRIMARY KEY, mi INTEGER, nonce TEXT, t0 INTEGER)');
+    this.sql.exec('CREATE TABLE IF NOT EXISTS golf (mi INTEGER, id TEXT, ms INTEGER, shots INTEGER, at INTEGER, PRIMARY KEY (mi, id))');
   }
   row(id) {
     return this.sql.exec('SELECT * FROM p WHERE id = ?', String(id)).toArray()[0];
@@ -431,6 +440,37 @@ export class Leaderboard extends DurableObject {
         racers: racers.map((r) => ({ id: r.id, name: r.name, avatar: this.view(r).avatar, elo: r.pkelo, wins: r.pkwins, games: r.pkgames })),
       });
     }
+    if (path === '/api/golf/start') {
+      const r = this.auth(body), mi = Math.floor(+body.mi);
+      if (!r || !GOLF_MAPS[mi]) return Response.json({ error: 'Unknown player or map' }, { status: 400 });
+      const nonce = crypto.randomUUID().slice(0, 12);
+      this.sql.exec('INSERT INTO golfrun (id, mi, nonce, t0) VALUES (?, ?, ?, ?) ON CONFLICT (id) DO UPDATE SET mi = excluded.mi, nonce = excluded.nonce, t0 = excluded.t0', r.id, mi, nonce, Date.now());
+      return Response.json({ nonce });
+    }
+    if (path === '/api/golf') {
+      const r = this.auth(body), mi = Math.floor(+body.mi);
+      const run = r && this.sql.exec('SELECT * FROM golfrun WHERE id = ? AND mi = ?', r.id, mi).toArray()[0];
+      if (!run) return Response.json({ error: 'No climb in progress on this map' }, { status: 400 });
+      // Anti-cheat: replay every shot on the same map with the same luck. The ball must really end in the cup,
+      // and the server's own clock can't be faster than the ball's flight time.
+      const v = verifyRun(mi, run.nonce, body.shots);
+      const ms = Date.now() - run.t0;
+      if (!v || ms < (v.ticks * 1000) / 120 - 1000 || ms > 864e5) return Response.json({ error: 'Run rejected' }, { status: 400 });
+      this.sql.exec('DELETE FROM golfrun WHERE id = ?', r.id); // one submit per climb
+      this.sql.exec(
+        `INSERT INTO golf (mi, id, ms, shots, at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (mi, id) DO UPDATE SET ms = excluded.ms, shots = excluded.shots, at = excluded.at
+         WHERE excluded.ms < golf.ms`,
+        mi, r.id, ms, v.shots, Date.now(),
+      );
+      const best = this.sql.exec('SELECT ms FROM golf WHERE mi = ? AND id = ?', mi, r.id).one().ms;
+      const rank = this.sql.exec('SELECT COUNT(*) AS n FROM golf WHERE mi = ? AND ms < ?', mi, best).one().n + 1;
+      return Response.json({ ms, best, rank });
+    }
+    if (path === '/api/golf/top') {
+      const mi = Math.floor(+new URL(req.url).searchParams.get('m')) || 0;
+      const rows = this.sql.exec('SELECT p.*, golf.ms AS gms, golf.shots AS gshots FROM golf JOIN p ON p.id = golf.id WHERE golf.mi = ? ORDER BY golf.ms ASC LIMIT 20', mi).toArray();
+      return Response.json({ mi, top: rows.map((r) => ({ id: r.id, name: r.name, avatar: this.view(r).avatar, ms: r.gms, shots: r.gshots })) });
+    }
     // internal (only reachable from Room, never routed from the public Worker)
     if (path === '/verify') {
       const r = this.auth(body);
@@ -549,5 +589,166 @@ export class Race extends DurableObject {
     if (me?.id && stayer && (await this.ctx.storage.get('start'))) await this.finish(stayer.id, true);
     else if (me?.id) for (const w of rest) w.send(JSON.stringify({ t: 'left' }));
     if (me?.code && !rest.length) await this.ctx.storage.deleteAll(); // race over: leave nothing behind
+  }
+}
+
+// Night Shift typing rooms (max 4). Instance 'lobby' is the hub: it keeps the live list of open rooms and pushes it
+// to everyone browsing. Every other instance is one room, in one of two modes:
+//   surv   - survival: everyone types their own prompts, the server only relays progress (casual, nothing to cheat for)
+//   rounds - same prompt for everyone, the server times who finishes last (bots are computed from the seed) and takes
+//            a heart from them; most hearts wins. Pure rules in src/lib/typer.js, shared with the offline game.
+const NIGHT_QUICK_WAIT = 15000;
+export class Night extends DurableObject {
+  players(except) {
+    return this.ctx.getWebSockets().filter((w) => w !== except).map((w) => w.deserializeAttachment()).filter((p) => p?.name).sort((a, b) => a.joined - b.joined);
+  }
+  send(msg, except) { const raw = JSON.stringify(msg); for (const w of this.ctx.getWebSockets()) if (w !== except) try { w.send(raw); } catch {} }
+  hub(body) { return this.env.NIGHT.get(this.env.NIGHT.idFromName('lobby')).fetch('https://hub/hub', { method: 'POST', body: JSON.stringify(body) }).catch(() => {}); }
+  async room() { return (await this.ctx.storage.get('room')) ?? {}; }
+  async lobby(except) {
+    const room = await this.room();
+    const players = this.players(except).map(({ id, name, avatar }) => ({ id, name, avatar }));
+    this.send({ t: 'lobby', code: room.code, mode: room.mode, quick: !!room.quick, bots: room.bots !== false, host: players[0]?.id, players, startAt: room.quickAt ?? 0, now: Date.now() }, except);
+    if (players.length) await this.hub({ code: room.code, mode: room.mode, quick: !!room.quick, bots: room.bots !== false, n: players.length, host: players[0].name, avatar: players[0].avatar });
+  }
+  serial(fn) { const run = (this.chain ?? Promise.resolve()).then(fn, fn); this.chain = run.catch(() => {}); return run; }
+  fetch(req) { return this.serial(() => this.onFetch(req)); }
+  webSocketMessage(ws, raw) { return this.serial(() => this.onMessage(ws, raw)); }
+  webSocketClose(ws) { return this.serial(() => this.onClose(ws)); }
+  alarm() { return this.serial(() => this.onAlarm()); }
+
+  async onFetch(req) {
+    const url = new URL(req.url);
+    if (url.pathname === '/hub') { // internal: a room opened, changed or closed
+      const b = await req.json();
+      const rooms = (await this.ctx.storage.get('rooms')) ?? {};
+      if (b.close) delete rooms[b.code]; else rooms[b.code] = { ...b, at: Date.now() };
+      for (const [c, x] of Object.entries(rooms)) if (Date.now() - x.at > 20 * 60000) delete rooms[c];
+      await this.ctx.storage.put('rooms', rooms);
+      this.send({ t: 'rooms', list: Object.values(rooms).sort((a, b) => b.at - a.at) });
+      return new Response('ok');
+    }
+    const [client, server] = Object.values(new WebSocketPair());
+    this.ctx.acceptWebSocket(server);
+    if (url.pathname === '/api/night') { // browsing: get the room list now and every time it changes
+      const rooms = (await this.ctx.storage.get('rooms')) ?? {};
+      server.send(JSON.stringify({ t: 'rooms', list: Object.values(rooms).sort((a, b) => b.at - a.at) }));
+      return new Response(null, { status: 101, webSocket: client });
+    }
+    const room = await this.room();
+    room.code ??= url.pathname.slice(11);
+    room.phase ??= 'lobby';
+    if (room.phase !== 'lobby' || this.players(server).length >= NIGHT_MAX) {
+      server.send(JSON.stringify({ t: 'full' }));
+      server.close(1000, 'full');
+      return new Response(null, { status: 101, webSocket: client });
+    }
+    if (!this.players(server).length && !room.mode) { // the creator picks the rules
+      room.mode = url.searchParams.get('mode') === 'rounds' ? 'rounds' : 'surv';
+      room.bots = true;
+      if (url.searchParams.has('quick')) { room.quick = true; room.quickAt = Date.now() + NIGHT_QUICK_WAIT; await this.ctx.storage.setAlarm(room.quickAt); }
+    }
+    await this.ctx.storage.put('room', room);
+    server.serializeAttachment({ joined: Date.now() });
+    return new Response(null, { status: 101, webSocket: client });
+  }
+  async begin() {
+    const room = await this.room();
+    if (room.phase !== 'lobby') return;
+    const humans = this.players();
+    if (!humans.length) return;
+    const seed = crypto.randomUUID().slice(0, 10);
+    const bots = room.bots !== false ? NIGHT_MAX - humans.length : 0;
+    const roster = [
+      ...humans.map(({ id, name, avatar }) => ({ id, name, avatar })),
+      ...Array.from({ length: bots }, (_, k) => ({ id: `bot${k}`, bot: k, name: botName(seed, k), avatar: guestAvatar() })),
+    ];
+    Object.assign(room, { phase: 'play', seed, at: Date.now() + 5000 });
+    let first = null;
+    if (room.mode === 'rounds') {
+      room.rs = newRounds(roster, room.at);
+      first = roundStart(room.rs, seed, room.at);
+      room.next = 'end';
+      await this.ctx.storage.setAlarm(room.rs.at + room.rs.limit + 300);
+    }
+    await this.ctx.storage.put('room', room);
+    await this.hub({ code: room.code, close: true });
+    this.send({ t: 'start', mode: room.mode, seed, at: room.at, now: Date.now(), roster, round: first });
+  }
+  async endRound(room) {
+    const rs = room.rs;
+    if (!rs || rs.endedR === rs.r) return;
+    rs.endedR = rs.r;
+    const msg = roundEnd(rs, room.seed, Date.now());
+    if (!rs.over && fastForward(rs, room.seed, Date.now())) Object.assign(msg, { over: true, ff: true });
+    if (rs.over) { room.phase = 'over'; room.next = null; }
+    else { room.next = 'start'; await this.ctx.storage.setAlarm(Date.now() + ROUND_GAP); }
+    await this.ctx.storage.put('room', room);
+    this.send({ ...msg, now: Date.now() });
+  }
+  async onAlarm() {
+    const room = await this.room();
+    if (room.phase === 'lobby' && room.quick) return this.begin();
+    if (room.phase !== 'play' || room.mode !== 'rounds') return;
+    if (room.next === 'end') return this.endRound(room);
+    if (room.next === 'start') {
+      const msg = roundStart(room.rs, room.seed, Date.now());
+      room.next = 'end';
+      await this.ctx.storage.setAlarm(room.rs.at + room.rs.limit + 300);
+      await this.ctx.storage.put('room', room);
+      this.send({ ...msg, now: Date.now() });
+    }
+  }
+  async onMessage(ws, raw) {
+    let m;
+    try { m = JSON.parse(raw); } catch { return; }
+    const me = ws.deserializeAttachment();
+    if (!me) return;
+    const room = await this.room();
+    if (m.t === 'hello' && !me.name) {
+      const v = m.id && m.tok ? await lb(this.env).fetch('https://lb/verify', { method: 'POST', body: JSON.stringify({ id: m.id, tok: m.tok }) }).then((r) => (r.ok ? r.json() : null)).catch(() => null) : null;
+      if (v && this.players(ws).some((p) => p.pid === v.id)) { ws.send(JSON.stringify({ t: 'full', dup: true })); ws.close(1000, 'dup'); return; }
+      const id = crypto.randomUUID().slice(0, 8);
+      ws.serializeAttachment({ ...me, id, pid: v?.id ?? null, name: v?.name ?? newName(), avatar: v?.avatar ?? guestAvatar() });
+      ws.send(JSON.stringify({ t: 'you', id }));
+      if (this.players().length >= NIGHT_MAX && room.phase === 'lobby') return this.begin();
+      return this.lobby();
+    }
+    if (!me.name) return;
+    const host = this.players()[0]?.id === me.id;
+    if (m.t === 'bots' && host && room.phase === 'lobby' && !room.quick) { room.bots = !!m.on; await this.ctx.storage.put('room', room); return this.lobby(); }
+    if (m.t === 'start' && host && room.phase === 'lobby') return this.begin();
+    if (room.phase !== 'play' || me.dead) return;
+    if (m.t === 'fin' && room.mode === 'rounds' && m.r === room.rs.r) {
+      const ms = roundFinish(room.rs, me.id, Date.now());
+      if (ms == null) return;
+      await this.ctx.storage.put('room', room);
+      this.send({ t: 'fin', id: me.id, r: room.rs.r, ms });
+      if (humansDone(room.rs)) await this.endRound(room);
+      return;
+    }
+    // progress relay: prompt (or round) index, char index, power, score; 'dead' once
+    if (m.t === 's' || m.t === 'dead') {
+      const out = { t: m.t, id: me.id, i: Math.max(0, m.i | 0), c: Math.max(0, m.c | 0), hp: Math.max(0, Math.min(100, +m.hp || 0)), sc: Math.max(0, m.sc | 0), e: ['bad', 'done', 'perfect'].includes(m.e) ? m.e : '', ms: Math.max(0, m.ms | 0) };
+      if (m.t === 'dead') ws.serializeAttachment({ ...me, dead: true });
+      this.send(out, ws);
+    }
+  }
+  async onClose(ws) {
+    const me = ws.deserializeAttachment();
+    const room = await this.room();
+    if (me?.name) this.send({ t: 'left', id: me.id }, ws);
+    const left = this.players(ws);
+    if (!left.length) {
+      if (room.code && room.phase === 'lobby') await this.hub({ code: room.code, close: true });
+      await this.ctx.storage.deleteAll();
+      return;
+    }
+    if (room.phase === 'lobby') return this.lobby(ws);
+    if (room.mode === 'rounds' && room.phase === 'play' && me?.id && room.rs.lives[me.id] > 0) { // leaving = out of the match
+      room.rs.lives[me.id] = 0;
+      await this.ctx.storage.put('room', room);
+      if (humansDone(room.rs)) await this.endRound(room);
+    }
   }
 }

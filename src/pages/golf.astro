@@ -1,0 +1,144 @@
+---
+import Base from '../layouts/Base.astro';
+import { MAPS } from '../lib/golf.js';
+---
+<Base title="Golf Climb: Roblox-Style Golfing Over It Game, Free Online" description="Climb 10 Roblox-style mountains with just a golf ball, inspired by Golfing Over It. One bad shot can drop you all the way down, but a guardian angel might save you. Speedrun ranking, full screen, free.">
+  <section class="hero" style="padding-bottom:10px">
+    <span class="pill">⛳ New · Rage game</span>
+    <h1><span class="grad">Golf Climb</span>: one ball, ten mountains</h1>
+    <p>Drag, aim and shoot your ball up a tower of blocks. Miss and you may fall… a long way. Beat all 10 maps and race the speedrun ranking!</p>
+  </section>
+
+  <div class="gf game" id="gf">
+    <canvas id="gf-canvas" aria-label="Golf Climb game"></canvas>
+    <div class="gf-view" id="gf-view">
+      <i class="pk-bar top"></i><i class="pk-bar bottom"></i><div class="gf-flash" id="gf-flash"></div>
+      <div class="gf-hud" id="gf-hud" hidden>
+        <div class="gf-chip"><b id="gf-map"></b><small id="gf-sub"></small></div>
+        <div class="gf-chip gf-time"><b id="gf-time">0:00.00</b><small id="gf-shots">0 shots</small></div>
+      </div>
+      <div class="gf-meter" id="gf-meter" hidden><i id="gf-meter-fill"></i><span id="gf-meter-me">⛳</span></div>
+      <div class="gf-power" id="gf-power" hidden></div>
+      <div class="gf-state" id="gf-state"></div>
+      <div class="gf-banner" id="gf-banner"></div>
+    </div>
+    <button id="gf-fs" class="btn fs-btn" type="button" aria-label="Full screen">⛶</button>
+    <div id="gf-tools" class="gf-tools" hidden>
+      <button id="gf-menu-btn" class="btn" type="button" aria-label="Menu">🏠</button>
+      <button id="gf-restart" class="btn" type="button" aria-label="Restart map">↺</button>
+      <button id="gf-zoom" class="btn" type="button" aria-label="Zoom out">🔭</button>
+      <button id="gf-mute" class="btn" type="button" aria-label="Sound">🔊</button>
+    </div>
+
+    <div id="gf-menu" class="gf-panel">
+      <div class="gf-card">
+        <span class="gf-logo">⛳</span>
+        <h2>Golf Climb</h2>
+        <p class="small muted" style="margin:0 0 12px">Pick a mountain. Finish one to unlock the next!</p>
+        <div id="gf-continue" hidden style="margin-bottom:12px"></div>
+        <div class="gf-maps" id="gf-maps"></div>
+        <h3 class="gf-toph">🏆 Speedrun ranking</h3>
+        <select id="gf-board-map" class="btn" aria-label="Map">{MAPS.map((m, i) => <option value={i}>{m.emoji} {i + 1}. {m.name}</option>)}</select>
+        <ol id="gf-top" class="pk-toplist gf-toplist"><li class="muted">Loading…</li></ol>
+        <div class="gf-how"><span>🖱️ Drag back &amp; release to shoot</span><span>⚪ White ball: hit again in the air</span><span>🔭 Wheel / button: zoom</span><span>⛶ Full screen</span></div>
+      </div>
+    </div>
+
+    <div id="gf-summary" class="gf-panel" hidden>
+      <div class="gf-card">
+        <div id="gf-sum"></div>
+        <div class="gf-btns"><button id="gf-next" class="btn play" type="button">⏭️ Next mountain</button><button id="gf-again" class="btn" type="button">🔄 Retry</button><button id="gf-back" class="btn" type="button">🏠 Menu</button></div>
+        <h3 class="gf-toph">🏆 Fastest climbers</h3>
+        <ol id="gf-top2" class="pk-toplist gf-toplist"></ol>
+      </div>
+    </div>
+  </div>
+
+  <section class="neu box prose" style="margin-top:28px">
+    <h2>How to play Golf Climb</h2>
+    <ol>
+      <li>Press anywhere on the game, drag <b>backwards</b> like a slingshot and let go. The longer the drag, the stronger the shot.</li>
+      <li>Just like the original, a <b>white ball</b> can be hit again <b>in the air</b> (up to 2 extra hits per flight; time slows down while you aim). Once it touches anything it turns <b>black</b> until it almost stops.</li>
+      <li>Climb a surreal mountain of giant objects: trees, houses, a giant noob, horses, eagles, elephants, sharks, turtles, donuts, icebergs, satellites… There are no walls: overshoot and the ball flies off and rolls back down the valley.</li>
+      <li>Every surface feels different: 🧊 ice slides, 🧁 soft fur and frosting stop the ball, 🎈 balloons bounce it and 🌋 lava sends you back to your last spot.</li>
+      <li>Fell far? A <b>guardian angel 😇</b> may appear at random, catch your ball and fly it back. The more you fall without progress, the luckier you get.</li>
+      <li>Sink the ball in the hole at the summit to finish. Your time is checked by the server and enters the speedrun ranking of that mountain.</li>
+    </ol>
+    <p>Mountains: {MAPS.map((m) => `${m.emoji} ${m.name}`).join(' · ')}.</p>
+    <p class="small muted">Inspired by the classic rage games Getting Over It and Golfing Over It. Your climb is saved: close the tab and continue later.</p>
+  </section>
+
+  <style is:global>
+    .gf { position: relative; height: min(80vh, 760px); min-height: 480px; border-radius: 20px; overflow: hidden; background: #1c212c; box-shadow: var(--neu-lg); touch-action: none; user-select: none; -webkit-user-select: none; }
+    #gf-canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
+    .gf-view { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+    .gf-view.cine .pk-bar { transform: none; }
+    .gf-view.cine .gf-hud { opacity: 0.3; }
+    .gf-view::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.55)); opacity: 0; transition: opacity 0.5s; }
+    .gf-view.cine::after { opacity: 1; }
+    .gf-view::before { content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s; background: radial-gradient(ellipse 60% 90% at 50% -10%, rgba(255, 240, 170, 0.75), rgba(255, 210, 90, 0.25) 45%, transparent 70%), repeating-conic-gradient(from 0deg at 50% -10%, rgba(255, 236, 160, 0.14) 0deg 4deg, transparent 4deg 12deg); mix-blend-mode: screen; }
+    .gf-view.divine::before { opacity: 1; animation: pk-holy 2.4s ease-in-out infinite; }
+    .pk-bar { position: absolute; left: 0; right: 0; height: 11%; background: #000; transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 1; }
+    .pk-bar.top { top: 0; transform: translateY(-100%); }
+    .pk-bar.bottom { bottom: 0; transform: translateY(100%); }
+    @keyframes pk-holy { 50% { filter: brightness(1.35); } }
+    .gf-flash { position: absolute; inset: 0; opacity: 0; }
+    .gf-state { position: absolute; left: 50%; bottom: 14px; translate: -50% 0; padding: 6px 14px; border-radius: 99px; background: rgba(15, 18, 26, 0.7); backdrop-filter: blur(6px); color: #fff; font: 600 14px var(--fun); white-space: nowrap; }
+    .gf-state:empty { display: none; }
+    .gf-view { transition: box-shadow 0.25s; }
+    .gf-view.bullet { box-shadow: inset 0 0 120px rgba(80, 160, 255, 0.55); }
+    .gf-flash.go { animation: gf-flash 0.7s ease; }
+    @keyframes gf-flash { 25% { opacity: 0.85; } }
+    .gf-hud { position: absolute; top: 10px; left: 10px; right: 60px; display: flex; justify-content: space-between; gap: 8px; transition: opacity 0.4s; }
+    .gf-chip { display: flex; flex-direction: column; padding: 8px 14px; border-radius: 14px; background: rgba(23, 27, 36, 0.72); backdrop-filter: blur(8px); color: var(--head); font-family: var(--fun); }
+    .gf-chip small { color: var(--muted); font-size: 12px; }
+    .gf-time { text-align: right; }
+    .gf-time b { font: 700 1.35rem var(--fun); font-variant-numeric: tabular-nums; }
+    .gf-meter { position: absolute; right: 18px; top: 70px; bottom: 80px; width: 8px; border-radius: 99px; background: rgba(255, 255, 255, 0.16); }
+    .gf-meter i { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 99px; background: linear-gradient(#ffd23f, #3ecf8e); transition: height 0.3s; }
+    .gf-meter span { position: absolute; left: 50%; translate: -50% 50%; font-size: 18px; transition: bottom 0.3s; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6)); }
+    .gf-meter::before { content: '🏁'; position: absolute; top: -26px; left: 50%; translate: -50% 0; font-size: 18px; }
+    .gf-power { position: absolute; padding: 3px 10px; border-radius: 99px; background: rgba(0, 0, 0, 0.6); color: #fff; font: 700 14px var(--fun); translate: -50% -170%; white-space: nowrap; }
+    .gf-banner { position: absolute; top: 24%; left: 50%; translate: -50% 0; text-align: center; opacity: 0; display: grid; width: 90%; z-index: 2; }
+    .gf-banner b { font: 700 clamp(1.7rem, 6vw, 3.2rem) var(--fun); color: #fff; text-shadow: 0 4px 20px rgba(0, 0, 0, 0.55); }
+    .gf-banner span { font: 600 1.05rem var(--fun); color: #fff; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8); }
+    .gf-banner.go { animation: gf-banner 2.6s ease both; }
+    @keyframes gf-banner { 0% { opacity: 0; transform: scale(0.6) translateY(20px); } 15% { opacity: 1; transform: scale(1.08); } 25%, 78% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: translateY(-20px); } }
+    .gf-tools { position: absolute; left: 10px; bottom: 10px; display: flex; gap: 8px; z-index: 3; }
+    .gf-tools .btn { padding: 9px 12px; font-size: 16px; }
+    .gf-panel { position: absolute; inset: 0; display: grid; place-items: center; background: linear-gradient(180deg, rgba(23, 27, 36, 0.05), rgba(23, 27, 36, 0.55)); z-index: 5; }
+    .gf-card { width: min(600px, calc(100% - 28px)); max-height: calc(100% - 24px); overflow: auto; text-align: center; padding: 20px; border-radius: 22px; background: rgba(23, 27, 36, 0.86); backdrop-filter: blur(12px); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45); animation: gf-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .gf-card h2 { font-size: 2rem; margin: 2px 0 6px; }
+    .gf-logo { font-size: 3.2rem; display: inline-block; animation: gf-float 2.2s ease-in-out infinite; }
+    @keyframes gf-pop { from { transform: scale(0.8) translateY(20px); opacity: 0; } }
+    @keyframes gf-float { 50% { transform: translateY(-8px) rotate(-8deg); } }
+    .gf-maps { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+    .gf-mapbtn { position: relative; display: grid; gap: 2px; text-align: left; padding: 10px 12px; border: 0; border-radius: 14px; cursor: pointer; color: #fff; background: linear-gradient(135deg, var(--a), var(--b)); box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45); transition: transform 0.15s; font-family: var(--fun); }
+    .gf-mapbtn:hover:not(:disabled) { transform: translateY(-3px) scale(1.02); }
+    .gf-mapbtn b { font-size: 1rem; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.45); }
+    .gf-mapbtn small { font-size: 12px; opacity: 0.95; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
+    .gf-mapbtn i { position: absolute; right: 8px; top: 6px; font-style: normal; font-size: 1.6rem; }
+    .gf-mapbtn:disabled { filter: grayscale(1) brightness(0.55); cursor: not-allowed; }
+    .gf-mapbtn.done::after { content: '✅'; position: absolute; right: 8px; bottom: 6px; font-size: 14px; }
+    .gf-toph { font-size: 1rem; margin: 16px 0 6px; }
+    #gf-board-map { width: 100%; margin-bottom: 8px; }
+    .pk-toplist { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; text-align: left; }
+    .pk-toplist li { display: grid; grid-template-columns: 28px 30px 1fr auto; gap: 8px; align-items: center; padding: 4px 10px; border-radius: 12px; background: var(--bg-2); font-size: 14px; }
+    .pk-toplist li.me { outline: 2px solid var(--pink); }
+    .pk-toplist li.muted { display: block; text-align: center; }
+    .pk-toplist svg { width: 30px; height: 30px; }
+    .pk-toplist em { font-style: normal; font-family: var(--fun); color: var(--gold); font-variant-numeric: tabular-nums; }
+    .gf-how { display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; margin-top: 14px; font-size: 12px; color: var(--muted); }
+    .gf-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+    .gf-big { font: 700 2.6rem var(--fun); color: var(--gold); margin: 4px 0; font-variant-numeric: tabular-nums; }
+    @media (max-width: 640px) {
+      .gf { height: 78vh; border-radius: 14px; }
+      .gf-tools .btn { padding: 7px 10px; font-size: 14px; }
+      .gf-time b { font-size: 1.1rem; }
+    }
+    @media (prefers-reduced-motion: reduce) { .gf-logo, .gf-card { animation: none; } }
+  </style>
+  <script>
+    import '../scripts/golf.ts';
+  </script>
+</Base>
