@@ -9,10 +9,10 @@ const { g } = Astro.props;
 const { active, expired } = g.codes;
 const n = active.length;
 const faq = [
-  { q: `What are the newest ${g.title} codes?`, a: n ? `The newest codes are ${active.slice(0, 3).map((c) => `${c.code} (${c.reward})`).join(', ')}.` : `There are no working ${g.title} codes right now. We check for new ones every 2 hours, so bookmark this page.` },
-  { q: `How many ${g.title} codes are active?`, a: `As of ${date(updatedAt)} there ${n === 1 ? 'is 1 active code' : `are ${n} active codes`} and ${expired.length} expired codes.` },
-  { q: `Why is my ${g.title} code not working?`, a: 'Codes are usually case-sensitive, so copy them exactly (use our copy button). Some codes need a minimum level, only work once per account, or have expired - check the expired list below.' },
-  { q: `When do new ${g.title} codes come out?`, a: `New codes usually drop with updates, events and like milestones. The last ${g.title} update was on ${date(g.updated)}.` },
+  { q: `What are the newest ${g.title} giftcodes?`, a: n ? `The newest giftcodes are ${active.slice(0, 3).map((c) => `${c.code} (${c.reward})`).join(', ')}.` : `There are no working ${g.title} giftcodes right now. We check for new ones every 2 hours, so bookmark this page.` },
+  { q: `How many ${g.title} redeem codes are active?`, a: `As of ${date(updatedAt)} there ${n === 1 ? 'is 1 active redeem code' : `are ${n} active redeem codes`} and ${expired.length} expired giftcodes.` },
+  { q: `Best way to redeem ${g.title} giftcodes?`, a: 'Giftcodes are usually case-sensitive, so copy them exactly (use our copy button). Some codes need a minimum level, only work once per account, or have expired - check the expired list below.' },
+  { q: `When do new ${g.title} giftcodes come out?`, a: `New giftcodes usually drop with updates, events and milestones. The last ${g.title} update was on ${date(g.updated)}.` },
 ];
 const howToSteps = [
   `Open ${g.title} on Roblox and join a server.`,
@@ -22,23 +22,24 @@ const howToSteps = [
 ];
 const schema = [
   { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
-  { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [['Home', '/'], ['Codes', '/codes/'], [`${g.title} Codes`, `/codes/${g.slug}/`]].map(([name, p], i) => ({ '@type': 'ListItem', position: i + 1, name, item: new URL(p, Astro.site).href })) },
-  { '@context': 'https://schema.org', '@type': 'HowTo', name: `How to Redeem ${g.title} Codes`, step: howToSteps.map((t, i) => ({ '@type': 'HowToStep', position: i + 1, text: t })), totalTime: 'PT1M' },
+  { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [['Home', '/'], ['Codes', '/codes/'], [`${g.title} Giftcodes`, `/codes/${g.slug}/`]].map(([name, p], i) => ({ '@type': 'ListItem', position: i + 1, name, item: new URL(p, Astro.site).href })) },
+  { '@context': 'https://schema.org', '@type': 'HowTo', name: `How to Redeem ${g.title} Giftcodes`, step: howToSteps.map((t, i) => ({ '@type': 'HowToStep', position: i + 1, text: t })), totalTime: 'PT1M' },
+  n > 0 && { '@context': 'https://schema.org', '@type': 'CollectionPage', name: `${g.title} Giftcodes & Redeem Codes`, description: `Free ${g.title} giftcodes and redeem codes updated every 2 hours`, hasPart: active.map((c) => ({ '@type': 'Offer', priceCurrency: 'FREE', name: c.code, description: `${g.title} giftcode: ${c.reward}` })) },
 ];
 ---
 <Base
-  title={`${g.title} Codes (${monthYear}) - ${n ? `${n} FREE Gift Codes` : 'New Redeem Codes'}`}
-  description={n ? `ALL ${n} working ${g.title} redeem codes for ${monthYear}: ${active.slice(0, 3).map((c) => c.code).join(', ')} + more. Grab free ${active[0].reward.toLowerCase()} NOW before they expire! Updated every 2 hours.` : `NEW ${g.title} redeem codes for ${monthYear} - checked every 2 hours. How to redeem gift codes, full expired list and tips.`}
+  title={`${g.title} Giftcodes & Redeem Codes - ${n ? `${n} FREE [Working]` : `New Codes [${new Date().getFullYear()}]`}`}
+  description={n ? `${n} working ${g.title} giftcodes + redeem codes for ${monthYear}. Free ${active[0].reward.toLowerCase()}: ${active.slice(0, 3).map((c) => c.code).join(', ')} + more. Copy-paste in-game. 💰 Updated every 2 hours.` : `${g.title} giftcodes & redeem codes 2026 - new free codes checked hourly. How to redeem + full expired list.`}
   image={g.thumbs[0] ?? g.icon}
   schema={schema}
 >
-  <GameHeader g={g} page="codes" h1={`${g.title} Codes (${monthYear})`} sub={`Checked ${date(updatedAt)} · ${n} active · ${expired.length} expired`} />
+  <GameHeader g={g} page="codes" h1={`${g.title} Giftcodes & Redeem Codes [${monthYear}]`} sub={`✅ ${n} active · ⏰ Updated ${date(updatedAt)} · ❌ ${expired.length} expired`} />
 
   <div class="layout" style="margin-top:28px">
     <div style="display:grid;gap:24px;min-width:0">
       <div class="neu box" id="active">
-        <h2>✅ Working {g.title} codes</h2>
-        {n > 0 && <div style="margin:-4px 0 16px"><span class="small">🏆 Code Hunter: you copied <b data-got>0</b> of {n}</span><div class="progress"><i data-bar></i></div></div>}
+        <h2>✅ Working {g.title} Giftcodes & Redeem Codes</h2>
+        {n > 0 && <div style="margin:-4px 0 16px"><span class="small">🏆 Code Hunter: you copied <b data-got>0</b> of {n} free giftcodes</span><div class="progress"><i data-bar></i></div></div>}
         {n ? (
           <div class="rows">
             {active.map((c) => (

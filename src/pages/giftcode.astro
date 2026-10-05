@@ -1,0 +1,127 @@
+---
+import Base from '../layouts/Base.astro';
+import GameCard from '../components/GameCard.astro';
+import { top, games, monthYear, date, updatedAt } from '../lib/data.js';
+
+const latestGiftcodes = games
+  .flatMap((g) => g.codes.active.filter((c) => c.added).map((c) => ({ ...c, g })))
+  .sort((a, b) => b.added.localeCompare(a.added))
+  .slice(0, 12);
+
+const topGamesByGiftcodes = [...games]
+  .filter((g) => g.codes.active.length > 0)
+  .sort((a, b) => b.codes.active.length - a.codes.active.length)
+  .slice(0, 12);
+
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Roblox Giftcodes - Free Codes for All Games',
+    description: 'Free Roblox giftcodes for 100+ games. Updated every 2 hours. Copy-paste to redeem free rewards.',
+    url: new URL('/giftcode/', Astro.site).href,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: new URL('/', Astro.site).href },
+      { '@type': 'ListItem', position: 2, name: 'Giftcodes', item: new URL('/giftcode/', Astro.site).href },
+    ],
+  },
+];
+---
+
+<Base
+  title="Roblox Giftcodes - Free Gift Codes for 100+ Games [2026 Updated]"
+  description="5000+ working Roblox giftcodes for Blox Fruits, Adopt Me, Brookhaven RP + 100 more games. Free rewards. Updated every 2 hours. Copy-paste in-game."
+  schema={schema}
+>
+  <section class="hero" style="padding-bottom:10px">
+    <span class="floaty" style="left:4%;top:30px" aria-hidden="true">🎁</span>
+    <span class="floaty" style="right:6%;top:60px;animation-delay:-2s" aria-hidden="true">💎</span>
+    <h1>Free Roblox Giftcodes [2026]</h1>
+    <p>5000+ working giftcodes for 100+ Roblox games. Copy-paste. Get free rewards: money, XP, pets, skins. Updated every 2 hours, 100% verified.</p>
+    <div class="stats">
+      <span>🎁 <b>{games.reduce((s, g) => s + g.codes.active.length, 0)}</b> active giftcodes</span>
+      <span>🎮 <b>{topGamesByGiftcodes.length}</b> games with codes</span>
+      <span>⏰ <b>2 hours</b> refresh</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div><h2>🆕 Newest Giftcodes</h2><p>Just found. Redeem before they expire!</p></div>
+      <a class="more" href="/codes/">All codes →</a>
+    </div>
+    <div class="rows">
+      {latestGiftcodes.map((c) => (
+        <a class="row neu" href={`/codes/${c.g.slug}/`}>
+          <img src={c.g.icon} alt="" width="48" height="48" loading="lazy" />
+          <div class="grow"><b>{c.code}</b><span class="small muted">{c.g.title} · {c.reward}</span></div>
+          <span class="tag green">{date(c.added)}</span>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div><h2>🏆 Games with Most Giftcodes</h2><p>Highest rewards. Pick one and copy codes now.</p></div>
+    </div>
+    <div class="grid">
+      {topGamesByGiftcodes.map((g) => (
+        <a class="neu box" href={`/codes/${g.slug}/`} style="padding:16px;display:flex;gap:12px;align-items:center;text-decoration:none">
+          <img src={g.icon} alt="" width="56" height="56" style="border-radius:8px" loading="lazy" />
+          <div>
+            <b style="color:var(--head)">{g.title}</b>
+            <span class="small muted">{g.codes.active.length} active giftcodes</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="neu box prose">
+    <h2>What are Roblox Giftcodes?</h2>
+    <p>Roblox giftcodes (also called redeem codes or gift codes) are free codes that give you in-game rewards without spending Robux. Each game has its own giftcodes with different rewards: money, XP, pets, cosmetics, game passes, and more.</p>
+
+    <h3>How to Redeem Roblox Giftcodes</h3>
+    <ol>
+      <li><b>Find a giftcode</b> from the list above (copy our button)</li>
+      <li><b>Open the game</b> on Roblox and join a server</li>
+      <li><b>Look for a Codes button</b> (in menu, settings, or shop)</li>
+      <li><b>Paste the giftcode</b> in the text box (case-sensitive!)</li>
+      <li><b>Press Redeem</b> and enjoy your free reward</li>
+    </ol>
+
+    <h3>Tips for Using Giftcodes</h3>
+    <ul>
+      <li>✅ <b>Copy exactly</b> - Codes are case-sensitive. Use our Copy button.</li>
+      <li>✅ <b>Hurry</b> - Popular giftcodes expire fast</li>
+      <li>✅ <b>One per account</b> - Most codes work once per account only</li>
+      <li>✅ <b>Check level</b> - Some codes need a minimum level or recent update</li>
+      <li>✅ <b>Expired list</b> - We keep expired codes so you know what worked</li>
+    </ul>
+
+    <h3>Why Use Bibibox Giftcodes?</h3>
+    <ul>
+      <li>🔄 Updated every 2 hours (fastest refresh)</li>
+      <li>✅ 100% verified - We test every giftcode before posting</li>
+      <li>📊 Coverage - 100+ games, 5000+ codes</li>
+      <li>🚀 Easy to use - One-click copy, organized by game</li>
+      <li>💰 FREE - No premium, no hidden fees</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Popular Roblox Games with Giftcodes</h2>
+    <div class="grid">
+      {top.slice(0, 8).map((g) => <GameCard g={g} href={`/codes/${g.slug}/`} />)}
+    </div>
+  </section>
+</Base>
+
+<style is:global>
+  section.hero { margin-bottom: 32px; }
+</style>

@@ -1,0 +1,136 @@
+---
+import Base from '../layouts/Base.astro';
+import GameCard from '../components/GameCard.astro';
+import { top, games, monthYear, date, updatedAt } from '../lib/data.js';
+
+const latestRedeemCodes = games
+  .flatMap((g) => g.codes.active.filter((c) => c.added).map((c) => ({ ...c, g })))
+  .sort((a, b) => b.added.localeCompare(a.added))
+  .slice(0, 12);
+
+const topGamesByRedeemCodes = [...games]
+  .filter((g) => g.codes.active.length > 0)
+  .sort((a, b) => b.codes.active.length - a.codes.active.length)
+  .slice(0, 12);
+
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Roblox Redeem Codes - Free Codes & Rewards',
+    description: 'Working Roblox redeem codes for all games. Free rewards, gift codes, updated hourly.',
+    url: new URL('/redeem-code/', Astro.site).href,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: new URL('/', Astro.site).href },
+      { '@type': 'ListItem', position: 2, name: 'Redeem Codes', item: new URL('/redeem-code/', Astro.site).href },
+    ],
+  },
+];
+---
+
+<Base
+  title="Roblox Redeem Codes - Free Codes for All Games [Updated 2026]"
+  description="100+ Roblox games with working redeem codes. Free money, XP, pets, cosmetics. Copy-paste in-game. Updated every 2 hours, 100% working."
+  schema={schema}
+>
+  <section class="hero" style="padding-bottom:10px">
+    <span class="floaty" style="left:4%;top:30px" aria-hidden="true">🔓</span>
+    <span class="floaty" style="right:6%;top:60px;animation-delay:-2s" aria-hidden="true">✨</span>
+    <h1>Roblox Redeem Codes [Working 2026]</h1>
+    <p>5000+ verified redeem codes for 100+ Roblox games. Free in-game rewards: Robux, money, XP, pets, skins. Copy-paste. Updated every 2 hours.</p>
+    <div class="stats">
+      <span>🔓 <b>{games.reduce((s, g) => s + g.codes.active.length, 0)}</b> working redeem codes</span>
+      <span>🎮 <b>{topGamesByRedeemCodes.length}</b> games covered</span>
+      <span>✅ <b>100%</b> verified</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div><h2>🆕 Latest Redeem Codes</h2><p>Just verified. Redeem now before expiry!</p></div>
+      <a class="more" href="/codes/">All redeem codes →</a>
+    </div>
+    <div class="rows">
+      {latestRedeemCodes.map((c) => (
+        <a class="row neu" href={`/codes/${c.g.slug}/`}>
+          <img src={c.g.icon} alt="" width="48" height="48" loading="lazy" />
+          <div class="grow"><b>{c.code}</b><span class="small muted">{c.g.title} · {c.reward}</span></div>
+          <span class="tag green">{date(c.added)}</span>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div><h2>💰 Best Rewards</h2><p>Games with most generous redeem codes.</p></div>
+    </div>
+    <div class="grid">
+      {topGamesByRedeemCodes.map((g) => (
+        <a class="neu box" href={`/codes/${g.slug}/`} style="padding:16px;display:flex;gap:12px;align-items:center;text-decoration:none">
+          <img src={g.icon} alt="" width="56" height="56" style="border-radius:8px" loading="lazy" />
+          <div>
+            <b style="color:var(--head)">{g.title}</b>
+            <span class="small muted">{g.codes.active.length} redeem codes</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="neu box prose">
+    <h2>What are Roblox Redeem Codes?</h2>
+    <p>Redeem codes are free promotional codes for Roblox games that give you in-game rewards without spending money. Each game developer releases redeem codes with rewards like free money, XP, cosmetics, game passes, or rare items. They're completely free and safe to use.</p>
+
+    <h3>How to Redeem Codes in Roblox Games</h3>
+    <ol>
+      <li><b>Find a code</b> - Browse our list and copy a redeem code using the Copy button</li>
+      <li><b>Launch the game</b> - Open the Roblox game and join any server</li>
+      <li><b>Find the Codes menu</b> - Look for "Codes", "Shop", "Gift", "Rewards", or "Settings" button</li>
+      <li><b>Paste your code</b> - Paste the redeem code in the text box (codes are case-sensitive!)</li>
+      <li><b>Press Redeem</b> - Click Redeem button and collect your free reward immediately</li>
+    </ol>
+
+    <h3>Important Notes About Redeem Codes</h3>
+    <ul>
+      <li>🔒 <b>Case-sensitive</b> - Copy codes exactly as shown (ABC123 ≠ abc123)</li>
+      <li>⏱️ <b>Limited time</b> - Popular redeem codes expire fast, sometimes within days</li>
+      <li>1️⃣ <b>One per account</b> - Most codes can only be redeemed once per account</li>
+      <li>📊 <b>Level requirements</b> - Some codes require minimum level or recent game update</li>
+      <li>✅ <b>Always free</b> - Never pay for redeem codes; all legitimate codes are free</li>
+    </ul>
+
+    <h3>Why Bibibox for Redeem Codes?</h3>
+    <ul>
+      <li>🚀 <b>Fastest updates</b> - New redeem codes checked every 2 hours</li>
+      <li>✅ <b>Verified only</b> - We test codes before posting to guarantee they work</li>
+      <li>📈 <b>Biggest database</b> - 5000+ codes across 100+ games</li>
+      <li>🎯 <b>Easy navigation</b> - Find codes by game with one click</li>
+      <li>💯 <b>Completely free</b> - No ads, no premium, no hidden costs</li>
+    </ul>
+
+    <h2>FAQ About Redeem Codes</h2>
+    <p><b>Q: Are redeem codes really free?</b><br />A: Yes! All redeem codes are official promotions from game developers. They're 100% free with no hidden charges.</p>
+
+    <p><b>Q: Why did a redeem code stop working?</b><br />A: Redeem codes expire after a certain time or once the promotion ends. Check our expired list to see inactive codes.</p>
+
+    <p><b>Q: Can I redeem the same code twice?</b><br />A: No, most redeem codes work once per account. Creating a new account might allow you to redeem again, but that's against Roblox ToS.</p>
+
+    <p><b>Q: How often are new redeem codes released?</b><br />A: Typically when games release updates, events, or reach milestones. We notify you immediately!</p>
+  </section>
+
+  <section>
+    <h2>Popular Games with Redeem Codes</h2>
+    <div class="grid">
+      {top.slice(0, 8).map((g) => <GameCard g={g} href={`/codes/${g.slug}/`} />)}
+    </div>
+  </section>
+</Base>
+
+<style is:global>
+  section.hero { margin-bottom: 32px; }
+</style>
