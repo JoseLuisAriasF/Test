@@ -1,5 +1,5 @@
 ---
-import { fmt, rating, date, playUrl, slugOf } from '../lib/data.js';
+import { fmt, stars, votes, date, playUrl, slugOf } from '../lib/data.js';
 const { g, h1, sub, page } = Astro.props;
 ---
 <nav class="crumbs"><a href="/">Home</a> › <a href={page === 'codes' ? '/codes/' : '/games/'}>{page === 'codes' ? 'Codes' : 'Games'}</a> › {g.title}</nav>
@@ -23,6 +23,6 @@ const { g, h1, sub, page } = Astro.props;
 <section class="kpis">
   <div class="neu"><small>Playing now</small><b>{fmt(g.playing)}</b></div>
   <div class="neu"><small>Total visits</small><b>{fmt(g.visits)}</b></div>
-  <div class="neu"><small>Likes</small><b>{rating(g)}%</b></div>
+  <div class="neu"><small>Rating</small><b>★ {stars(g)}<span class="small muted">/5 · {fmt(votes(g))} votes</span></b></div>
   <div class="neu"><small>Last update</small><b style="font-size:1.05rem">{date(g.updated)}</b></div>
 </section>
