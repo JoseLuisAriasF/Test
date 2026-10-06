@@ -5,7 +5,7 @@ import { SITE_NAME } from '../lib/data.js';
 const { title, description, image, schema = [], noindex = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
-const ld = [{ '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_NAME, url: Astro.site, potentialAction: { '@type': 'SearchAction', target: { '@type': 'EntryPoint', urlTemplate: `${Astro.site}codes/?q={search_term_string}` }, 'query-input': 'required name=search_term_string' } }, ...schema];
+const ld = [{ '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_NAME, url: Astro.site, potentialAction: { '@type': 'SearchAction', target: { '@type': 'EntryPoint', urlTemplate: `${Astro.site}codes/?q={search_term_string}` }, 'query-input': 'required name=search_term_string' } }, ...schema].filter(Boolean);
 ---
 <!doctype html>
 <html lang="en">
