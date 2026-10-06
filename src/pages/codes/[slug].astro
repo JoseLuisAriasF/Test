@@ -24,7 +24,6 @@ const schema = [
   { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
   { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [['Home', '/'], ['Codes', '/codes/'], [`${g.title} Giftcodes`, `/codes/${g.slug}/`]].map(([name, p], i) => ({ '@type': 'ListItem', position: i + 1, name, item: new URL(p, Astro.site).href })) },
   { '@context': 'https://schema.org', '@type': 'HowTo', name: `How to Redeem ${g.title} Giftcodes`, step: howToSteps.map((t, i) => ({ '@type': 'HowToStep', position: i + 1, text: t })), totalTime: 'PT1M' },
-  n > 0 && { '@context': 'https://schema.org', '@type': 'CollectionPage', name: `${g.title} Giftcodes & Redeem Codes`, description: `Free ${g.title} giftcodes and redeem codes updated every 2 hours`, hasPart: active.map((c) => ({ '@type': 'Offer', priceCurrency: 'FREE', name: c.code, description: `${g.title} giftcode: ${c.reward}` })) },
 ];
 ---
 <Base
