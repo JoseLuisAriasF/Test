@@ -27,6 +27,12 @@ export const full = (n) => new Intl.NumberFormat('en').format(n ?? 0);
 export const date = (iso) => new Date(iso).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 export const monthYear = updatedAt.toLocaleDateString('en', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 export const rating = (g) => Math.round((g.up / (g.up + g.down || 1)) * 100);
+// Roblox up/down votes → a 0.0-5.0 star value and total vote count, for visible
+// display and matching AggregateRating markup. Only emit markup when >= 1 star
+// (Google rejects ratingValue below worstRating).
+export const votes = (g) => (g.up ?? 0) + (g.down ?? 0);
+export const stars = (g) => Math.round((g.up / (g.up + g.down || 1)) * 50) / 10;
+export const ratingLD = (g) => (stars(g) >= 1 ? { '@type': 'AggregateRating', ratingValue: stars(g), bestRating: 5, ratingCount: votes(g) } : null);
 export const isNew = (c) => !!c.added && updatedAt - new Date(c.added) < 3 * DAY;
 export const newCodes = (g) => g.codes.active.filter(isNew).length;
 export const slugOf = (s) => s.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');

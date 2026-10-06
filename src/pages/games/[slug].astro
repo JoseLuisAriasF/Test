@@ -2,7 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import GameHeader from '../../components/GameHeader.astro';
 import Side from '../../components/Side.astro';
-import { games, monthYear, date, full, fmt, autoTips } from '../../lib/data.js';
+import { games, monthYear, date, full, fmt, autoTips, ratingLD } from '../../lib/data.js';
 
 export const getStaticPaths = () => games.map((g) => ({ params: { slug: g.slug }, props: { g } }));
 const { g } = Astro.props;
@@ -16,6 +16,7 @@ const schema = [
     image: g.icon, genre: g.genre, gamePlatform: ['PC', 'Mobile', 'Xbox', 'PlayStation'], applicationCategory: 'Game',
     author: { '@type': 'Organization', name: g.creator }, datePublished: g.created, dateModified: g.updated,
     sameAs: `https://www.roblox.com/games/${g.placeId}`,
+    ...(ratingLD(g) ? { aggregateRating: ratingLD(g) } : {}),
   },
   ...(faq.length ? [{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) }] : []),
   { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [['Home', '/'], ['Games', '/top/'], [`${g.title}`, `/games/${g.slug}/`]].map(([name, p], i) => ({ '@type': 'ListItem', position: i + 1, name, item: new URL(p, Astro.site).href })) },
