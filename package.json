@@ -7,7 +7,7 @@
     "build": "astro build && node scripts/headers.mjs",
     "preview": "astro preview",
     "update": "node scripts/update.mjs",
-    "test": "node scripts/codes.test.mjs && node scripts/rounds.test.mjs && node scripts/google.test.mjs && node scripts/avatar.test.mjs && node scripts/explore.test.mjs && node scripts/golf.test.mjs && node scripts/typer.test.mjs",
+    "test": "node scripts/codes.test.mjs && node scripts/rounds.test.mjs && node scripts/google.test.mjs && node scripts/avatar.test.mjs && node scripts/explore.test.mjs && node scripts/golf.test.mjs && node scripts/typer.test.mjs && node scripts/chase.test.mjs",
     "deploy": "astro build && wrangler deploy",
     "dev:full": "astro build && wrangler dev"
   },

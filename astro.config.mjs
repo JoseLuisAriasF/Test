@@ -16,7 +16,7 @@ export default defineConfig({
       if (p.startsWith('/codes/') && p !== '/codes/') return { ...item, lastmod, changefreq: 'hourly', priority: 0.9 };
       if (p === '/codes/' || p === '/top/') return { ...item, lastmod, changefreq: 'hourly', priority: 0.8 };
       if (p.startsWith('/games/')) return { ...item, lastmod, changefreq: 'daily', priority: 0.7 };
-      if (['/guessr/','/blox-world/','/real-world/','/parkour/','/golf/','/typing/','/trending/','/play/','/quiz/'].includes(p)) return { ...item, changefreq: 'daily', priority: 0.6 };
+      if (['/chase/','/chase/guide/','/guessr/','/blox-world/','/real-world/','/parkour/','/golf/','/typing/','/trending/','/play/','/quiz/'].includes(p)) return { ...item, changefreq: 'daily', priority: 0.6 };
       return { ...item, changefreq: 'weekly', priority: 0.3 };
     },
   })],
