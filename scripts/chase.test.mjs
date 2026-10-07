@@ -64,11 +64,16 @@ for (const id of ['kael3', 'shin3']) {
 
 // Blink is invulnerable, aim jump floats the archer, aiming tilts the arrow
 {
-  const k = newFighter('k', 'kael3', 0);
+  const k = newFighter('k', 'shin4', 0); // Spirit Step still teleports (kael3 is now a fast travel dash)
   step(k, KEY.K, map); step(k, 0, map);
   assert.ok(isInv(k));
   run(k, 0, 3);
-  assert.ok(k.x > 8, 'blinked forward');
+  assert.ok(k.x > 5, 'blinked forward');
+  const da = newFighter('d', 'kael3', 0); // Dark Assassin dash is a fast single-step travel dash, invulnerable at the start
+  step(da, KEY.K, map); step(da, 0, map);
+  assert.ok(isInv(da));
+  run(da, 0, 9);
+  assert.ok(da.x > 8, 'phantom dash crosses ground fast');
   const air = newFighter('s', 'syl1', 0), fall = newFighter('t', 'syl1', 0);
   const shots = [];
   run(air, (i) => (i < 2 ? KEY.U : i > 20 && i % 12 < 2 ? KEY.A | (i > 40 ? KEY.D : 0) : 0), 60);

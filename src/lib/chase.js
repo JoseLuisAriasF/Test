@@ -51,15 +51,18 @@ const RAW = {
   // dash-cancels (Korean dash), Lothus air hooks, Illusion/Vortex steps, a super jump and invisibility.
   kael3: {
     hero: 'Kael', cls: 'Nightblade', tier: 3, col: '#8b5cf6', glow: '#c4b5fd', weapon: 'claws', stats: [4, 6, 3, 9, 6, 5],
-    dash: { name: 'Phantom Blink', blink: 9, frames: 12, air: 1, inv: [0, 8] }, airJumps: 1, stall: 0, kdash: true, rocket: [0.78, 0.48], jump: 1.22,
-    desc: 'Lass-style assassin: blinks next to you, Korean dash, Lothus air hooks, Illusion and Vortex steps, a super jump and invisibility. Low HP.',
-    tricks: ['Korean dash', 'Lothus', 'Illusion Step', 'Vortex Step', 'Flash Step'],
+    // Dark Assassin of the classic: ONE fast single-step dash (no double ground dash), relentless Korean-dash
+    // pressure, and the Air Lock — in the air, mash dash + Z to air-dash through the enemy and juggle (2 air dashes).
+    dash: { name: 'Phantom Dash', speed: 1.15, frames: 10, air: 2, inv: [0, 6] }, airJumps: 1, stall: 0, kdash: true, rocket: [0.78, 0.48], jump: 1.22,
+    desc: 'Lass-style Dark Assassin: one fast single-step dash, relentless Korean-dash pressure, the Air Lock (air-dash + Z juggle), Lothus hooks, Illusion and Vortex steps and invisibility. Low HP, highest skill ceiling.',
+    tricks: ['Korean dash', 'Air Lock', 'Lothus', 'Illusion Step', 'Vortex Step'],
     moves: {
       z1: M(14, { anim: 'claw', vx: [[1, 4, 0.2]], hit: [H(4, 6, 26, 0, 1.4, 3.3, 2.6, 0.12, 0, 16)], next: 'z2', cw: 6, cancel: 5 }),
       z2: M(14, { anim: 'claw2', vx: [[1, 4, 0.2]], hit: [H(4, 6, 26, 0, 1.2, 3.3, 2.6, 0.12, 0, 16)], next: 'z3', cw: 6, cancel: 5 }),
       z3: M(18, { anim: 'spin', hit: [H(3, 5, 18, -0.5, 1, 4, 3.2, 0.1, 0, 16), H(8, 10, 18, -0.5, 1, 4, 3.2, 0.12, 0, 16)], next: 'z4', cw: 10, cancel: 6 }),
       z4: M(26, { anim: 'upper', hit: [H(6, 9, 44, 0, 0.5, 3.4, 4.6, 0.2, 0.66, 30, 'L')], cancel: 10 }),
-      da: M(18, { anim: 'thrust', vx: [[0, 10, 0.5]], hit: [H(2, 9, 30, 0, 1, 3, 3, 0.35, 0.2, 18)], cancel: 4 }),
+      // DA dash attack: two quick claws then a backflip kick that launches — the long-reaching opener into infinites.
+      da: M(24, { anim: 'thrust', vx: [[0, 5, 0.5]], hit: [H(2, 5, 22, 0, 1.3, 3.2, 2.6, 0.12, 0, 15), H(7, 10, 22, 0, 1.3, 3.2, 2.6, 0.12, 0, 15), H(13, 17, 42, 0, 0.4, 3.4, 4.8, 0.5, 0.55, 26, 'L')], cancel: 5 }),
       // Lothus: rocket, then Z + → , Z + → … each air slash dashes forward and HOOKS the enemy, carrying them with you;
       // every hook that lands gives the air slash back, so you keep flying (5-12 hits). ← + Z turns and throws them back.
       ja: M(14, { anim: 'claw', air: true, airChain: 4, turn: true, landEnd: true, grav: 0.15, vx: [[0, 9, 0.72]], vy: [[0, 0.1]], hit: [{ ...H(1, 9, 22, -0.5, 0.2, 3.8, 4.2, 0.72, 0.1, 22), carry: true }], next: 'ja', cw: 6, cancel: 6 }),
