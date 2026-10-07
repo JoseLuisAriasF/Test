@@ -12,6 +12,7 @@ const { g, h1, sub, page } = Astro.props;
     </div>
     <h1>{h1}</h1>
     <p class="muted" style="margin:0">{sub}</p>
+    <p class="small muted" style="margin:4px 0 0">Maintained by the <a href="/about/">BibiBox team</a> · codes cross-checked across trusted sources, refreshed every 2 hours</p>
     <div class="actions">
       <a class="btn play" href={playUrl(g)} target="_blank" rel="noopener nofollow">▶ Play on Roblox</a>
       {page === 'codes'

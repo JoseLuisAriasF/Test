@@ -2,11 +2,20 @@
 import Base from '../layouts/Base.astro';
 import { SITE_NAME } from '../lib/data.js';
 ---
-<Base title="About" description={`What ${SITE_NAME} is and how we find Roblox codes.`}>
+<Base title={`About ${SITE_NAME}`} description={`How ${SITE_NAME} finds, cross-checks and updates Roblox codes, and who maintains the site.`}>
   <div class="neu box prose" style="max-width:760px;margin:40px auto">
     <h1>About {SITE_NAME}</h1>
-    <p>{SITE_NAME} tracks the 50 most played Roblox games in real time using public Roblox data. Every 2 hours we check several trusted gaming sites for codes and only list a code as working when most sources agree.</p>
-    <p>Tips and guides are written with the help of AI from each game's official information, and never include exploits, hacks or anything against the Roblox rules.</p>
-    <p>{SITE_NAME} is a fan site and is not affiliated with or endorsed by Roblox Corporation. All game names, icons and screenshots belong to their creators.</p>
+    <p>{SITE_NAME} is a free Roblox codes and game-guide database maintained by a small team of Roblox players. We track the most played Roblox games using public Roblox data and keep a running list of working redeem codes for each one, refreshed every 2 hours.</p>
+
+    <h2>How we verify codes</h2>
+    <p>We do not invent codes. Every 2 hours our pipeline checks several trusted gaming sources for new and expired codes. A code is only listed as <b>active</b> once multiple independent sources agree it currently works; when sources report it as dead, or enough time passes without confirmation, we move it to the <b>expired</b> list instead of deleting it, so you can see the full history. We never list codes that require exploits, generators, or anything against the Roblox rules — those do not exist, and any site offering them is a scam.</p>
+
+    <h2>How our guides are written</h2>
+    <p>Game tips, badge and game-pass tables and update notes are generated from each game's public Roblox information and reviewed for accuracy. Where a guide is drafted with the help of AI, it is based only on that official game data — never copied from other sites — and checked before it goes live.</p>
+
+    <h2>Who runs {SITE_NAME}</h2>
+    <p>{SITE_NAME} is an independent fan project. We make money from nothing that compromises the codes: no paid placements decide what we list. If you find a code that no longer works, a missing game, or a mistake in a guide, tell us at <a href="mailto:hello@bibibox.xyz">hello@bibibox.xyz</a> and we will fix it.</p>
+
+    <p class="small muted">{SITE_NAME} is a fan site and is not affiliated with or endorsed by Roblox Corporation. "Roblox" and all game names, icons and screenshots belong to their respective creators.</p>
   </div>
 </Base>
