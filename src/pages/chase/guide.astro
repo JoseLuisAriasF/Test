@@ -1,0 +1,107 @@
+---
+import Base from '../../layouts/Base.astro';
+import { CHARS } from '../../lib/chase.js';
+const tricks = [
+  { group: 'Classic movement techs · every class', id: 'grabfwd', title: 'Grab (→ + Z)', who: ['kael3', 'shin2', 'val4'], keys: '→ + Z touching the enemy  ·  Mushidon + → + Z', why: 'Like the classic: press the arrow towards an enemy you are touching and Z to grab and throw them. Grabs go through super armor and cut skills. Fast grab: Mushidon (or Shadow) straight into them holding → and tap Z. In the air after a rocket it is an aerial grab.', tip: 'A missed grab leaves you open for half a second: grab when they commit.' },
+  { id: 'rocket', title: 'Rocket & Break Rocket', who: ['ald3', 'kael3', 'syl1'], keys: '→ → ↑  ·  → → ← + ↑', why: 'Dash and press up: a low diagonal jump that keeps the full dash speed. Press the other arrow with up to rocket backwards out of a dash (Break Rocket): you recoil away while they swing at nothing.', tip: 'The rocket is the base of every other movement tech.' },
+  { group: 'Lass-style Nightblade (3rd job) · the classic Dark Assassin', id: 'lothus', title: 'Lothus', who: ['kael3'], keys: '→ → ↑ then Z + → , Z + → , Z + →…', why: 'The signature move: rocket, then every Z + → is an air slash that hooks the enemy and carries them through the air with you. Every hook that lands gives the slash back, so you keep flying: 5 to 12 hits. Turn with ← + Z to throw them the other way.', tip: 'Start it close and low: the first hook has to connect, the rest follows.' },
+  { id: 'illusion', title: 'Illusion Step', who: ['kael3', 'kael4'], keys: '[hold ←] → → ↑ ↓', why: 'Hold the opposite arrow while you rocket and shadow: the whole movement is invulnerable, you pass straight through attacks and skills and land behind them.', tip: 'Players used to call people who spam it "macro". Use it to escape a super, then punish.' },
+  { id: 'vortex', title: 'Vortex Step', who: ['kael3', 'kael4'], keys: '[hold ←] → → ↑ then Z', why: 'Rocket away holding the other arrow, then press Z: the air slash goes backwards and hits whoever is chasing you.', tip: 'Perfect against Korean dashers and anyone who rockets after you.' },
+  { id: 'lassrocket', title: 'Lass-style Rocket (Nightblade · Stormfang)', who: ['kael3', 'kael4'], keys: '→ → ↑ then Z + → , Z + → …  (← + Z turns)', why: 'The shadow thieves rocket fast and low (about 30°). In the air every Z + → is a dash slash that pushes them forward and keeps them flying, leaving shadows behind. Hold ← with Z to turn around and come back. Up to 4 slashes per jump.', tip: 'Chain the slashes into a grab (← + → + Z) or a Front Spell when you reach them.' },
+  { id: 'shadow', title: 'Shadow Step', who: ['kael3', 'shin3', 'kael4'], keys: '→ → ↑ ↓  ·  ↑ ↓  ·  ↑ ↓…', why: 'Rocket, then down right after: you dive back to the floor without losing speed. Press up as you land to rocket again and keep chaining: the fastest way across the arena.', tip: 'Keep holding forward the whole time. On a platform, a too-early ↓ drops you through it.' },
+  { id: 'mushidon', title: 'Mushidon', who: ['shin2', 'val4', 'ald3'], keys: '→ → ↑↓ (together)', why: 'Up and down almost at the same time: the rocket never leaves the floor and turns into a much longer ground dash. Great to grab someone from far away.', tip: 'If you see your fighter leave the ground, you were too slow on ↓: that was a Shadow.' },
+  { id: 'guan', title: 'Guan Step', who: ['syl3', 'kael4', 'shin4'], keys: '↑  → →  ↓', why: 'Jump, air dash, then down: a diagonal dive to the floor. Comes down much faster than falling, perfect to land on someone or escape the air.', tip: 'Classes with 2 air dashes can Guan twice.' },
+  { id: 'frontspell', title: 'Front & Back Spell', who: ['kael4', 'shin3', 'val4'], keys: '→ → + A / S / D', why: 'Use a skill straight out of a dash, a rocket or a shadow: it keeps your momentum and comes out instantly. Hold the opposite arrow to cast it backwards (Back Spell) and surprise whoever chases you.', tip: 'Skills are buffered: press them a few frames early and they come out the moment you can act.' },
+  { id: 'bleach', title: 'Bleach (combo → skill)', who: ['ald3', 'shin2', 'syl4'], keys: 'Z Z Z → A / S / D', why: 'Skills cancel your basic attack as soon as its hits are out. Combo, then skill: the enemy has no gap to counter.', tip: 'Save the 3-bar super for a Bleach: it is the most reliable way to land it.' },
+  { id: 'grab', title: 'Grab vs super armor', who: ['shin2', 'val4', 'kael3'], keys: '→ + Z (or ← + → + Z)', why: 'Press both arrows and attack at the same time next to someone: you throw them over your shoulder and knock them down. Grabs go through super armor, so they stop armored attacks and skills. Rocket or Guan into an enemy and grab in the air.', tip: 'A missed grab leaves you open for half a second: grab when they commit to an attack.' },
+  { id: 'ottoshot', title: 'OttoShot', who: ['shin3', 'syl1', 'kael3'], keys: '↓ + Z on a platform', why: 'Drop through the platform attacking. Keep the high ground and hit anyone who walks underneath, then jump back up.', tip: 'Archers aim the shot down automatically.' },
+  { id: 'aimguan', title: 'Aim Guan (archers)', who: ['syl1', 'syl3', 'syl4'], keys: '→ → ↑ then Z Z Z', why: 'Rocket and shoot: the arrows lock perfectly straight and every shot holds the archer in the air (up to 6). A wall of arrows nobody can walk through.', tip: 'Start it close to the floor so the straight line hits standing enemies.' },
+  { group: 'Class dashes', id: 'blink', title: 'Phantom Blink & Spirit Step', who: ['kael3', 'shin4'], keys: '→ → (Nightblade · Spirit Master)', why: 'These classes teleport instead of dashing: Phantom Blink is invulnerable for 8 frames (Spirit Step: a shorter one). Step through an attack, turn around and punish from behind.', tip: 'Wait for the swing to start. Blinking too early just puts you in front of the hit.' },
+  { group: 'Combat', id: 'kdash', title: 'Korean dash', who: ['kael3', 'kael4', 'shin3'], keys: '→→ Z →→ Z…', why: 'Dash, attack and cancel the attack with another dash, again and again. You cross the arena faster than running and every step is a hitbox: the classic way to chase and open fights.', tip: 'Double tap again right after the dash attack starts: the cancel window opens a few frames in.' },
+  { id: 'flash', title: 'Flash Step', who: ['kael4', 'syl3'], keys: '→→ then →→ again (also in the air)', why: 'Stormfang dashes in two very fast steps, invulnerable at the start of each one, and can do it twice in the air. Twin Bow has the same chain (Wind Step) without the invulnerability.', tip: 'Double tap again 4 frames into the first step. Change direction between steps to dodge and come back.' },
+  { id: 'demon', title: 'Demon Step', who: ['val4'], keys: '→ → (Eternal)', why: 'Valdren dashes slowly but with super armor: arrows and jabs do damage but cannot stop him. Close the distance against archers and hit back.', tip: 'It still takes damage. Use it to cross a stream of arrows, not to tank a super.' },
+  { id: 'burst', title: 'Flame Burst', who: ['shin3', 'syl4'], keys: '→ → (Flame Fist · Arc Cannon)', why: 'A short wind-up, then a burst much longer than a normal dash. In the air it shoots upwards: reach the high platforms or escape a juggle. Arc Cannon has a smaller one (Recoil Burst).', tip: 'The wind-up is readable: dash early, or bait their attack first.' },
+  { id: 'cancel', title: 'Dash-cancel combos', who: ['kael3', 'kael4', 'shin3', 'syl1'], keys: 'Z Z Z → →→ → Z Z Z Z', why: 'Cancel your combo before its last hit with a dash and start it again. Longer combos, more damage, and the enemy never reaches the knockdown that would save them.', tip: 'Combos get lighter the longer they go (hitstun decay) and after 9 hits the enemy is knocked down anyway.' },
+  { id: 'aim', title: 'Aim jump (air stall)', who: ['syl1', 'syl3', 'syl4'], keys: '↑ then Z Z Z · ↓+Z · ↑+Z', why: 'Every arrow shot in the air pushes the archer up a little: shoot repeatedly to float over the fight. Hold ↓ to aim down at grounded enemies, ↑ to hit jumpers.', tip: 'Archer floats 3 shots, Twin Bow 4, Arc Cannon 2. Land, and the counter resets.' },
+  { id: 'backflip', title: 'Backflip shot', who: ['syl1', 'syl3', 'syl4'], keys: '↓ + Z', why: 'Somebody rushes in? Flip backwards and shoot in the same motion. You make space and hit them while they dash.', tip: 'It is also the safest way to get out of a corner.' },
+  { id: 'juggle', title: 'Juggles', who: ['shin2', 'ald3', 'kael4'], keys: 'Z Z Z Z → ↑ → Z → A', why: 'The last hit of most combos launches. Jump after them and keep hitting in the air, then finish with a skill.', tip: 'Juggled fighters fall faster with every hit: finish early with a skill.' },
+  { id: 'counter', title: 'Counter', who: ['val4', 'ald3', 'shin4'], keys: 'C while you are hit', why: 'Every class can break a combo: press C while you are in hitstun to spend 1 MP bar, push enemies away and get a moment of invulnerability. Then punish.', tip: 'Keep one MP bar for the counter in close fights. Countering on the first hit wastes it.' },
+  { id: 'armor', title: 'Super armor trade', who: ['val4', 'kael4', 'syl4'], keys: 'Z Z Z Z · A', why: 'Moves with super armor (the fighter glows red) take damage but never flinch. Attack into their combo and hit back harder.', tip: 'Armor does not stop damage. Use it when your hit is bigger than theirs.' },
+  { id: 'platforms', title: 'Platforms & triple jump', who: ['shin4', 'syl3'], keys: '↑ ↑ ↑ · ↓ + ↑', why: 'Platforms are one-way: jump up through them, drop down with ↓ + ↑. Controlling the high ground keeps you out of reach of melee classes.', tip: 'Getting up after a knockdown is invulnerable: never waste a combo on someone getting up.' },
+];
+const schema = [{
+  '@context': 'https://schema.org', '@type': 'HowTo', name: 'Blox Chase PvP tricks: Korean dash, aim jump, counters',
+  step: tricks.map((t, i) => ({ '@type': 'HowToStep', position: i + 1, name: t.title, text: `${t.keys}: ${t.why}` })),
+}];
+---
+<Base title="Blox Chase PvP Guide: Shadow Step, Rocket, Mushidon, Korean Dash (Animated)" description="Learn the classic Grand Chase-style PvP techs in Blox Chase: Rocket, Shadow Step, Mushidon, Guan Step, Front Spell, Bleach, OttoShot, Aim Guan, Korean dash, Flash Step, Demon Step, dash-cancel combos, aim jump, backflip shot, juggles, counters and super armor. Every trick is a live animated demo with the exact buttons." schema={schema}>
+  <section class="hero" style="padding-bottom:6px">
+    <span class="pill">🎬 PvP Academy</span>
+    <h1><span class="grad">Blox Chase</span> PvP tricks</h1>
+    <p>Every demo runs on the real game engine, frame by frame. Watch the keys light up, slow it down, then try it in <a href="/chase/">Practice</a>.</p>
+  </section>
+
+  <nav class="cg-toc">{tricks.map((t) => <a href={`#${t.id}`}>{t.title}</a>)}</nav>
+
+  <div class="cg-list">
+    {tricks.map((t, i) => (<>
+      {t.group && <h2 class="cg-group">{t.group}</h2>}
+      <article class="cg neu" id={t.id} data-demo={t.id}>
+        <div class="cg-stage">
+          <canvas aria-label={`${t.title} demo`}></canvas>
+          <span class="cg-cap" aria-live="off"></span>
+          <div class="cg-keys" aria-hidden="true"></div>
+          <i class="cg-bar"><u></u></i>
+        </div>
+        <div class="cg-text">
+          <span class="cg-n">{String(i + 1).padStart(2, '0')}</span>
+          <h2>{t.title}</h2>
+          <p class="cg-input"><kbd>{t.keys}</kbd></p>
+          <p>{t.why}</p>
+          <p class="cg-tip">💡 {t.tip}</p>
+          <p class="cg-who">{t.who.map((id) => <span style={`--c:${CHARS[id].col}`}>{CHARS[id].name}</span>)}</p>
+          <div class="cg-btns"><button class="btn cg-speed" type="button">🐢 Slow-mo</button><button class="btn cg-replay" type="button">⏮ Replay</button><a class="btn primary" href="/chase/">⚔️ Try it</a></div>
+        </div>
+      </article>
+    </>))}
+  </div>
+
+  <section class="neu box prose" style="margin-top:24px">
+    <h2>Controls</h2>
+    <p><kbd>←</kbd> <kbd>→</kbd> move · <kbd>↑</kbd> jump (again in the air for double jump) · <kbd>↓</kbd> crouch · <kbd>↓</kbd> + <kbd>↑</kbd> drop through a platform · <kbd>Z</kbd> attack (hold it to charge MP, release for the skill) · double tap <kbd>→</kbd><kbd>→</kbd> = dash (keep holding to sprint) · <kbd>←</kbd>+<kbd>→</kbd>+<kbd>Z</kbd> grab · <kbd>C</kbd> counter · <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> skills (1, 2 and 3 MP bars). On a phone, use the on-screen buttons.</p>
+  </section>
+
+  <style is:global>
+    .cg-toc { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 6px 0 18px; }
+    .cg-toc a { padding: 6px 12px; border-radius: 999px; background: rgba(109, 127, 240, 0.12); color: var(--accent-2); font: 600 13px var(--fun); }
+    .cg-list { display: grid; gap: 18px; }
+    .cg-group { font-size: 1.5rem; margin: 18px 0 0; padding-left: 12px; border-left: 4px solid var(--gold); }
+    .cg { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 18px; padding: 14px; scroll-margin-top: 70px; }
+    .cg:nth-child(even) .cg-stage { order: 2; }
+    .cg-stage { position: relative; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #07060c; }
+    .cg-stage canvas { width: 100%; height: 100%; display: block; }
+    .cg-cap { position: absolute; left: 12px; top: 10px; max-width: calc(100% - 24px); padding: 6px 12px; border-radius: 10px; background: rgba(5, 5, 12, 0.75); color: #fff; font: 600 15px var(--fun); border-left: 3px solid var(--gold); opacity: 0; }
+    .cg-cap.go { opacity: 1; animation: cg-cap 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.3) forwards; }
+    .cg-cap:empty { display: none; }
+    @keyframes cg-cap { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
+    .cg-keys { position: absolute; left: 50%; bottom: 14px; translate: -50% 0; display: flex; gap: 4px; padding: 6px; border-radius: 12px; background: rgba(5, 5, 12, 0.6); }
+    .cg-keys kbd { min-width: 28px; height: 28px; display: grid; place-items: center; border-radius: 7px; background: #2a2a3a; color: #9aa0b8; font: 700 13px var(--fun); box-shadow: 0 3px 0 #111; transition: transform 0.06s, background 0.06s; }
+    .cg-keys kbd.on { background: #ffd23f; color: #111; transform: translateY(2px); box-shadow: 0 1px 0 #8a6a00, 0 0 14px rgba(255, 210, 63, 0.8); }
+    .cg-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 255, 255, 0.08); }
+    .cg-bar u { display: block; height: 100%; background: var(--brand); }
+    .cg-text { display: flex; flex-direction: column; gap: 4px; }
+    .cg-text h2 { font-size: 1.5rem; }
+    .cg-text p { margin: 4px 0; font-size: 14px; }
+    .cg-n { font: 700 13px var(--fun); color: var(--accent-2); letter-spacing: 2px; }
+    .cg-input kbd, .prose kbd { display: inline-block; padding: 3px 9px; border-radius: 7px; background: #f2f2f6; color: #111; font: 700 13px var(--fun); box-shadow: 0 2px 0 #8a8fa3; }
+    .cg-tip { color: var(--gold); }
+    .cg-who { display: flex; flex-wrap: wrap; gap: 6px; }
+    .cg-who span { padding: 2px 9px; border-radius: 999px; font-size: 12px; background: color-mix(in srgb, var(--c) 22%, transparent); color: color-mix(in srgb, var(--c) 60%, #fff); }
+    .cg-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; padding-top: 8px; }
+    .cg-btns .btn { padding: 8px 12px; font-size: 13px; }
+    @media (max-width: 820px) { .cg { grid-template-columns: 1fr; } .cg:nth-child(even) .cg-stage { order: 0; } .cg-keys kbd { min-width: 22px; height: 22px; font-size: 11px; } }
+  </style>
+  <script>
+    import '../../scripts/chaseguide.ts';
+  </script>
+</Base>

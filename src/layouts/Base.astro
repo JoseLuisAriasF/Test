@@ -50,8 +50,9 @@ const ld = [
         {/* isGame true when we're on any minigame page */}
         <nav class="nav" id="nav">
           <div class="nav-drop">
-            <button class:list={['nav-drop-btn', { active: ['/guessr','/blox-world','/real-world','/parkour','/golf','/typing'].some(p => Astro.url.pathname.startsWith(p)) }]} type="button">🎮 Minigames</button>
+            <button class:list={['nav-drop-btn', { active: ['/guessr','/blox-world','/real-world','/parkour','/golf','/typing','/chase'].some(p => Astro.url.pathname.startsWith(p)) }]} type="button">🎮 Minigames</button>
             <div class="nav-drop-menu">
+              <a href="/chase/" class:list={[{ active: Astro.url.pathname.startsWith('/chase') }]}>⚔️ Blox Chase PvP</a>
               <a href="/guessr/" class:list={[{ active: Astro.url.pathname.startsWith('/guessr') }]}>🕵️ RoGuessr</a>
               <a href="/blox-world/" class:list={[{ active: Astro.url.pathname.startsWith('/blox-world') }]}>🧱 Blox World</a>
               <a href="/real-world/" class:list={[{ active: Astro.url.pathname.startsWith('/real-world') }]}>🌍 Real World</a>
@@ -81,7 +82,7 @@ const ld = [
       <div class="wrap">
         <p>© {new Date().getFullYear()} {SITE_NAME}. Not affiliated with Roblox Corporation. Game data refreshes every 2 hours.</p>
         <nav>
-          <a href="/guessr/">RoGuessr</a><a href="/blox-world/">Blox World</a><a href="/real-world/">Real World</a><a href="/parkour/">Parkour</a><a href="/golf/">Golf Climb</a><a href="/typing/">Night Shift</a><a href="/codes/">Codes</a><a href="/top/">Top 50</a><a href="/ranking/">Ranking</a><a href="/trending/">Trending</a><a href="/play/">Daily Game</a><a href="/quiz/">Quiz</a>
+          <a href="/chase/">Blox Chase</a><a href="/guessr/">RoGuessr</a><a href="/blox-world/">Blox World</a><a href="/real-world/">Real World</a><a href="/parkour/">Parkour</a><a href="/golf/">Golf Climb</a><a href="/typing/">Night Shift</a><a href="/codes/">Codes</a><a href="/top/">Top 50</a><a href="/ranking/">Ranking</a><a href="/trending/">Trending</a><a href="/play/">Daily Game</a><a href="/quiz/">Quiz</a>
         </nav>
         <nav><a href="/about/">About</a><a href="/privacy/">Privacy</a><a href="/rss.xml">RSS</a></nav>
       </div>

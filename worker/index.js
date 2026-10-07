@@ -3,6 +3,7 @@
 //   Matchmaker  - hands out open rooms for quick match / ranked queues.
 //   Leaderboard - SQLite profiles: rating, stats (unlock cosmetics), avatar, optional Google link; weekly parkour board.
 //   Race        - Infinite Parkour online races: the 'lobby' instance pairs players, one instance per race relays positions.
+//   Chase       - Blox Chase PvP rooms: the 'lobby' instance lists open rooms, one instance per room keeps the real HP.
 // Players never type text: names are generated, so there is no chat to moderate.
 import { DurableObject } from 'cloudflare:workers';
 import { makeRounds, cleanConfig, points, eloDeltas, TYPES } from '../src/lib/rounds.js';
@@ -11,6 +12,7 @@ import { verifyGoogleToken, googleKeys, hashId } from './google.js';
 import { GOOGLE_CLIENT_ID } from '../src/lib/config.js';
 import { weekOf, makeCourse, RACE_GOAL, MIN_MS_PER_PLAT } from '../src/lib/parkour.js';
 import { MAPS as GOLF_MAPS, verifyRun } from '../src/lib/golf.js';
+import { CHARS, CHAR_IDS, MAPS as CHASE_MAPS, MODES, MATCH_MS, MMR_START, CALIBRATION, reach, hitData, damage, isInv, mmrDeltas, ST, MV } from '../src/lib/chase.js';
 import { MAX_PLAYERS as NIGHT_MAX, botName, newRounds, roundStart, roundFinish, roundEnd, humansDone, fastForward, ROUND_GAP } from '../src/lib/typer.js';
 
 const ADJ = ['Turbo', 'Sneaky', 'Mega', 'Cosmic', 'Happy', 'Ninja', 'Golden', 'Rapid', 'Brave', 'Lucky', 'Epic', 'Shiny', 'Silly', 'Mighty', 'Pixel', 'Rocket'];
@@ -50,7 +52,11 @@ export default {
       if (req.headers.get('Upgrade') !== 'websocket') return Response.json({ error: 'WebSocket only' }, { status: 426 });
       return env.NIGHT.get(env.NIGHT.idFromName(path === '/api/night' ? 'lobby' : path.slice(11))).fetch(req);
     }
-    if (path === '/api/top' || path === '/api/parkour/top' || path === '/api/golf/top') {
+    if (path === '/api/chase' || /^\/api\/chase\/[A-Z0-9]{5}$/.test(path)) {
+      if (req.headers.get('Upgrade') !== 'websocket') return Response.json({ error: 'WebSocket only' }, { status: 426 });
+      return env.CHASE.get(env.CHASE.idFromName(path === '/api/chase' ? 'lobby' : path.slice(11))).fetch(req);
+    }
+    if (path === '/api/top' || path === '/api/parkour/top' || path === '/api/golf/top' || path === '/api/chase/top') {
       const cache = caches.default;
       let res = await cache.match(req);
       if (!res) {
@@ -318,6 +324,11 @@ export class Leaderboard extends DurableObject {
     // Golf Climb speedruns: one open run per player (server clock + the seed of the angel's luck), best time per map.
     this.sql.exec('CREATE TABLE IF NOT EXISTS golfrun (id TEXT PRIMARY KEY, mi INTEGER, nonce TEXT, t0 INTEGER)');
     this.sql.exec('CREATE TABLE IF NOT EXISTS golf (mi INTEGER, id TEXT, ms INTEGER, shots INTEGER, at INTEGER, PRIMARY KEY (mi, id))');
+    // Blox Chase PvP: ranked MMR (medals), wins and KOs.
+    for (const col of ['chwins INTEGER DEFAULT 0', 'chgames INTEGER DEFAULT 0', 'chkos INTEGER DEFAULT 0', 'chmmr INTEGER DEFAULT 1000', 'chpeak INTEGER DEFAULT 1000']) {
+      try { this.sql.exec(`ALTER TABLE p ADD COLUMN ${col}`); } catch {} // already there
+    }
+    this.sql.exec('CREATE INDEX IF NOT EXISTS p_chmmr ON p(chmmr)');
   }
   row(id) {
     return this.sql.exec('SELECT * FROM p WHERE id = ?', String(id)).toArray()[0];
@@ -336,7 +347,7 @@ export class Leaderboard extends DurableObject {
   }
   view(r, rank = this.rank(r)) {
     const stats = { games: r.games, wins: r.wins, correct: r.correct, streak: r.streak, perfect: r.perfect, peak: r.peak };
-    return { id: r.id, name: r.name, avatar: sanitize(JSON.parse(r.av || 'null'), stats, rank), elo: r.elo, rank, ranked: r.ranked, google: !!r.gid, stats, pk: { elo: r.pkelo ?? 1000, wins: r.pkwins ?? 0, games: r.pkgames ?? 0 } };
+    return { id: r.id, name: r.name, avatar: sanitize(JSON.parse(r.av || 'null'), stats, rank), elo: r.elo, rank, ranked: r.ranked, google: !!r.gid, stats, pk: { elo: r.pkelo ?? 1000, wins: r.pkwins ?? 0, games: r.pkgames ?? 0 }, ch: { wins: r.chwins ?? 0, games: r.chgames ?? 0, kos: r.chkos ?? 0, mmr: r.chmmr ?? 1000, peak: r.chpeak ?? 1000 } };
   }
   create(gid = null) {
     const id = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
@@ -471,7 +482,22 @@ export class Leaderboard extends DurableObject {
       const rows = this.sql.exec('SELECT p.*, golf.ms AS gms, golf.shots AS gshots FROM golf JOIN p ON p.id = golf.id WHERE golf.mi = ? ORDER BY golf.ms ASC LIMIT 20', mi).toArray();
       return Response.json({ mi, top: rows.map((r) => ({ id: r.id, name: r.name, avatar: this.view(r).avatar, ms: r.gms, shots: r.gshots })) });
     }
+    if (path === '/api/chase/top') {
+      // calibrated players by MMR, then wins
+      const rows = this.sql.exec('SELECT * FROM p WHERE chgames >= ? ORDER BY chmmr DESC, chwins DESC, id ASC LIMIT 100', CALIBRATION).toArray();
+      return Response.json({ top: rows.map((r) => ({ id: r.id, name: r.name, avatar: this.view(r).avatar, mmr: r.chmmr, peak: r.chpeak, wins: r.chwins, games: r.chgames, kos: r.chkos })), total: this.sql.exec('SELECT COUNT(*) AS n FROM p WHERE chgames >= ?', CALIBRATION).one().n });
+    }
     // internal (only reachable from Room, never routed from the public Worker)
+    if (path === '/chresult') {
+      const out = {};
+      for (const x of Array.isArray(body) ? body : []) {
+        const d = Math.max(-80, Math.min(80, x.delta | 0));
+        this.sql.exec('UPDATE p SET chwins = chwins + ?, chgames = chgames + 1, chkos = chkos + ?, chmmr = MAX(0, chmmr + ?), chpeak = MAX(chpeak, chmmr + ?), at = ? WHERE id = ?', x.won ? 1 : 0, Math.min(3, x.kos | 0), d, d, Date.now(), String(x.id));
+        const r = this.row(x.id);
+        if (r) out[x.id] = { wins: r.chwins, games: r.chgames, mmr: r.chmmr };
+      }
+      return Response.json(out);
+    }
     if (path === '/verify') {
       const r = this.auth(body);
       return r ? Response.json(this.view(r)) : Response.json(null, { status: 404 });
@@ -749,6 +775,225 @@ export class Night extends DurableObject {
       room.rs.lives[me.id] = 0;
       await this.ctx.storage.put('room', room);
       if (humansDone(room.rs)) await this.endRound(room);
+    }
+  }
+}
+
+// Blox Chase PvP rooms (up to 6: 1v1, 2v2, 3v3 or free for all). Instance 'lobby' is the hub: the live list of open rooms. Every other instance is one
+// room: players pick a fighter, the host starts, each browser simulates its own fighter and relays it (~20/s).
+// The server keeps the only real HP: an attacker claims a hit, the server checks the move exists for that fighter and
+// could reach from the attacker's last position to the victim's (who must not be invulnerable), applies the damage from
+// the shared move data (src/lib/chase.js) and decides KOs and the winner. Ranked MMR (mmrDeltas) only moves between different networks.
+const CHASE_BUDGET = 650, CHASE_REFILL = 0.24; // damage per attacker: a bucket of 650 refilling 240/s (a full combo + a super)
+const fiveCode = /^[A-Z0-9]{5}$/;
+const isInvSnap = (ch, v) => isInv({ ch, st: v.st, mv: v.mv, t: v.t });
+export class Chase extends DurableObject {
+  players(except) {
+    return this.ctx.getWebSockets().filter((w) => w !== except).map((w) => w.deserializeAttachment()).filter((p) => p?.name).sort((a, b) => a.joined - b.joined);
+  }
+  send(msg, except) { const raw = JSON.stringify(msg); for (const w of this.ctx.getWebSockets()) if (w !== except) try { w.send(raw); } catch {} }
+  hub(body) { return this.env.CHASE.get(this.env.CHASE.idFromName('lobby')).fetch('https://hub/hub', { method: 'POST', body: JSON.stringify(body) }).catch(() => {}); }
+  async room() { return (this.r ??= (await this.ctx.storage.get('room')) ?? {}); }
+  save() { return this.ctx.storage.put('room', this.r); }
+  async lobby(except) {
+    const room = await this.room();
+    const players = this.players(except).map(({ id, name, avatar, ch, team, pid, mmr, games }) => ({ id, name, avatar, ch, team, member: !!pid, mmr, games }));
+    this.send({ t: 'lobby', code: room.code, mode: room.mode, map: room.map, host: players[0]?.id, players, now: Date.now() }, except);
+    if (players.length) await this.hub({ code: room.code, mode: room.mode, map: room.map, n: players.length, max: MODES[room.mode].max, host: players[0].name, avatar: players[0].avatar, chs: players.map((p) => p.ch) });
+  }
+  serial(fn) { const run = (this.chain ?? Promise.resolve()).then(fn, fn); this.chain = run.catch(() => {}); return run; }
+  fetch(req) { return this.serial(() => this.onFetch(req)); }
+  webSocketMessage(ws, raw) { return this.serial(() => this.onMessage(ws, raw)); }
+  webSocketClose(ws) { return this.serial(() => this.onClose(ws)); }
+  alarm() { return this.serial(() => this.onAlarm()); }
+
+  async onFetch(req) {
+    const url = new URL(req.url);
+    if (url.pathname === '/hub') { // internal: a room opened, changed or closed
+      const b = await req.json();
+      const rooms = (await this.ctx.storage.get('rooms')) ?? {};
+      if (b.close) delete rooms[b.code]; else rooms[b.code] = { ...b, at: Date.now() };
+      for (const [c, x] of Object.entries(rooms)) if (Date.now() - x.at > 20 * 60000) delete rooms[c];
+      await this.ctx.storage.put('rooms', rooms);
+      this.send({ t: 'rooms', list: Object.values(rooms).sort((a, b) => b.at - a.at) });
+      return new Response('ok');
+    }
+    const [client, server] = Object.values(new WebSocketPair());
+    this.ctx.acceptWebSocket(server);
+    if (url.pathname === '/api/chase') { // browsing the room list
+      const rooms = (await this.ctx.storage.get('rooms')) ?? {};
+      server.send(JSON.stringify({ t: 'rooms', list: Object.values(rooms).sort((a, b) => b.at - a.at) }));
+      return new Response(null, { status: 101, webSocket: client });
+    }
+    const room = await this.room();
+    const code = url.pathname.slice(11);
+    if (!room.code) { // a brand new room: whoever opens it picks the rules
+      const mode = url.searchParams.get('mode');
+      Object.assign(room, { code, phase: 'lobby', mode: MODES[mode] ? mode : 'duel', map: Math.min(CHASE_MAPS.length - 1, Math.max(0, url.searchParams.get('map') | 0)) });
+      await this.save();
+    }
+    if (room.phase !== 'lobby' || this.players(server).length >= MODES[room.mode].max) {
+      server.send(JSON.stringify({ t: 'full', msg: room.phase === 'play' ? 'This fight already started. Pick another room!' : 'This room is full!' }));
+      server.close(1000, 'full');
+      return new Response(null, { status: 101, webSocket: client });
+    }
+    const ip = req.headers.get('CF-Connecting-IP') ?? '';
+    server.serializeAttachment({ joined: Date.now(), ip: ip ? (await hashId(ip)).slice(0, 10) : '' });
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  async onMessage(ws, raw) {
+    let m;
+    try { m = JSON.parse(raw); } catch { return; }
+    const me = ws.deserializeAttachment();
+    if (!me) return;
+    const room = await this.room();
+    if (m.t === 'hello' && !me.name) {
+      const v = m.id && m.tok ? await lb(this.env).fetch('https://lb/verify', { method: 'POST', body: JSON.stringify({ id: m.id, tok: m.tok }) }).then((r) => (r.ok ? r.json() : null)).catch(() => null) : null;
+      if (v && this.players(ws).some((p) => p.pid === v.id)) { ws.send(JSON.stringify({ t: 'full', msg: 'You are already in this room in another tab.' })); ws.close(1000, 'dup'); return; }
+      const others = this.players(ws);
+      const id = crypto.randomUUID().slice(0, 8);
+      const team = others.filter((p) => p.team === 1).length <= others.filter((p) => p.team === 2).length ? 1 : 2;
+      ws.serializeAttachment({ ...me, id, pid: v?.id ?? null, name: v?.name ?? newName(), avatar: v?.avatar ?? guestAvatar(), ch: CHARS[m.ch] ? m.ch : pick(CHAR_IDS), team, mmr: v?.ch.mmr ?? MMR_START, games: v?.ch.games ?? 0 });
+      ws.send(JSON.stringify({ t: 'you', id }));
+      return this.lobby();
+    }
+    if (!me.name) return;
+    const host = this.players()[0]?.id === me.id;
+    if (room.phase === 'lobby') {
+      if (m.t === 'pick' && CHARS[m.ch]) { ws.serializeAttachment({ ...me, ch: m.ch }); return this.lobby(); }
+      if (m.t === 'team') {
+        const to = me.team === 1 ? 2 : 1;
+        if (this.players().filter((p) => p.team === to).length >= MODES[room.mode].max / 2) return; // that side is full
+        ws.serializeAttachment({ ...me, team: to });
+        return this.lobby();
+      }
+      if (m.t === 'cfg' && host) {
+        if (MODES[m.mode] && this.players().length <= MODES[m.mode].max) room.mode = m.mode;
+        if (CHASE_MAPS[m.map]) room.map = m.map | 0;
+        await this.save();
+        return this.lobby();
+      }
+      if (m.t === 'start' && host) return this.begin();
+      return;
+    }
+    if (room.phase !== 'play' || !(me.id in room.hp)) return;
+    this.pos ??= new Map(); this.seen ??= new Set(); this.bucket ??= new Map(); this.veil ??= new Map(); // memory only: lost if the room is evicted mid-fight
+    if (m.t === 's' && Array.isArray(m.s) && m.s.length >= 12) {
+      const s = m.s.slice(0, 15).map((v) => (Number.isFinite(+v) ? Math.round(+v * 100) / 100 : 0));
+      const prev = this.pos.get(me.id), now = Date.now();
+      // positions can't jump further than the fastest dash/blink allows since the last report (no teleport hacks)
+      if (!prev || Math.hypot(s[0] - prev.x, s[1] - prev.y) <= ((now - prev.at) / 16.7) * 1.6 + 13) this.pos.set(me.id, { x: s[0], y: s[1], st: ST[s[5]] ?? 'idle', mv: MV[s[6]] ?? '', t: s[7], at: now });
+      else { prev.at = now; s[0] = prev.x; s[1] = prev.y; }
+      if (CHARS[me.ch].moves[MV[s[6]]]?.veil && !(this.veil.get(me.id)?.until > now)) this.veil.set(me.id, { until: now + 8000, mi: null }); // Phantom Veil buff
+      return this.send({ t: 's', id: me.id, s }, ws);
+    }
+    if (m.t === 'pr' && hitData(me.ch, m.mv, m.k | 0)) {
+      const n = (v, lim) => Math.max(-lim, Math.min(lim, +v || 0));
+      return this.send({ t: 'pr', id: me.id, mv: m.mv, k: m.k | 0, x: n(m.x, 60), y: n(m.y, 60), vx: n(m.vx, 3), vy: n(m.vy, 3) }, ws);
+    }
+    if (m.t === 'hit') return this.hit(room, me, m);
+  }
+
+  async hit(room, me, m) {
+    const to = String(m.to), k = m.k | 0;
+    const h = hitData(me.ch, m.mv, k), r = reach(me.ch, m.mv, k);
+    const a = this.pos.get(me.id), v = this.pos.get(to);
+    const vic = room.roster.find((p) => p.id === to);
+    if (!h || !r || !a || !v || !vic || !(room.hp[me.id] > 0) || !(room.hp[to] > 0)) return;
+    if (MODES[room.mode].teams && vic.team === me.team) return;
+    if (['down', 'up', 'dead'].includes(a.st)) return; // can't attack while lying on the floor
+    if (isInvSnap(vic.ch, v)) return;
+    if (Math.abs(a.x - v.x) > r.x || Math.abs(a.y - v.y) > r.y) return;
+    const tag = `${me.id}:${m.mi | 0}:${k}:${to}`;
+    if (this.seen.has(tag)) return;
+    this.seen.add(tag);
+    const vb = this.veil.get(me.id);
+    let mul = 1;
+    if (vb && vb.until > Date.now()) { vb.mi ??= m.mi | 0; if (vb.mi === (m.mi | 0)) mul = 1.3; else this.veil.delete(me.id); } // first attack after the veil: +30%
+    const dmg = damage(me.ch, vic.ch, h, mul);
+    const b = this.bucket.get(me.id) ?? { n: CHASE_BUDGET, at: Date.now() };
+    b.n = Math.min(CHASE_BUDGET, b.n + (Date.now() - b.at) * CHASE_REFILL);
+    b.at = Date.now();
+    this.bucket.set(me.id, b);
+    if (b.n < dmg) return; // ponytail: a damage bucket instead of tracking every fighter's MP server-side
+    b.n -= dmg;
+    room.hp[to] = Math.max(0, room.hp[to] - dmg);
+    room.stats[me.id].dmg += dmg;
+    this.send({ t: 'hit', by: me.id, to, mv: m.mv, k, dmg, hp: room.hp[to], dir: a.x <= v.x ? 1 : -1 });
+    if (room.hp[to] <= 0) {
+      room.stats[me.id].kos++;
+      this.send({ t: 'ko', id: to, by: me.id });
+      if (this.decided(room)) return this.end(room);
+    }
+    await this.save();
+  }
+
+  // the fight is over when one fighter (or one team) is left
+  decided(room) {
+    const alive = room.roster.filter((p) => room.hp[p.id] > 0);
+    return MODES[room.mode].teams ? new Set(alive.map((p) => p.team)).size <= 1 : alive.length <= 1;
+  }
+  async begin() {
+    const room = await this.room();
+    const players = this.players();
+    if (room.phase !== 'lobby' || players.length < 2 || players.length > MODES[room.mode].max) return;
+    if (MODES[room.mode].teams && new Set(players.map((p) => p.team)).size < 2) return this.send({ t: 'note', msg: 'Both teams need at least one player!' });
+    const spawns = CHASE_MAPS[room.map].spawns;
+    const teams = MODES[room.mode].teams;
+    const side = (p) => players.filter((q) => q.team === p.team).indexOf(p); // teams: red spawns on the left, blue on the right
+    const spawnOf = (p, i) => (teams ? spawns.filter((x) => (p.team === 1 ? x < 0 : x > 0))[side(p) % 3] : spawns[i % spawns.length]);
+    const roster = players.map((p, i) => ({ id: p.id, pid: p.pid, ip: p.ip, name: p.name, avatar: p.avatar, ch: p.ch, team: teams ? p.team : 0, spawn: spawnOf(p, i), mmr: p.mmr, games: p.games }));
+    Object.assign(room, { phase: 'play', at: Date.now() + 4000, roster, hp: Object.fromEntries(roster.map((p) => [p.id, CHARS[p.ch].hp])), stats: Object.fromEntries(roster.map((p) => [p.id, { dmg: 0, kos: 0 }])) });
+    this.pos = new Map(); this.seen = new Set(); this.bucket = new Map(); this.veil = new Map();
+    await this.save();
+    await this.ctx.storage.setAlarm(room.at + MATCH_MS + 500);
+    await this.hub({ code: room.code, close: true });
+    this.send({ t: 'start', at: room.at, now: Date.now(), map: room.map, mode: room.mode, roster: roster.map(({ pid, ip, ...p }) => ({ ...p, hp: room.hp[p.id] })) });
+  }
+  async end(room) {
+    if (room.phase !== 'play') return;
+    const ratio = (p) => room.hp[p.id] / CHARS[p.ch].hp;
+    let win;
+    if (MODES[room.mode].teams) {
+      const score = (t) => room.roster.filter((p) => p.team === t).reduce((s, p) => s + ratio(p), 0);
+      const best = score(1) >= score(2) ? 1 : 2;
+      win = room.roster.filter((p) => p.team === best).map((p) => p.id);
+    } else win = [[...room.roster].sort((a, b) => ratio(b) - ratio(a))[0].id];
+    const ranked = new Set(room.roster.map((p) => p.ip)).size >= 2; // same network => nothing counts (no alt farming)
+    // finish order: winners first, then by HP left. Guests play, but only player cards have a rating.
+    const members = room.roster.filter((p) => p.pid).map((p) => ({ ...p, score: (win.includes(p.id) ? 2 : 0) + ratio(p) }));
+    const deltas = ranked ? mmrDeltas(members) : {};
+    const reports = ranked ? members.map((p) => ({ id: p.pid, won: win.includes(p.id), kos: room.stats[p.id].kos, delta: deltas[p.id] })) : [];
+    const updated = reports.length ? await lb(this.env).fetch('https://lb/chresult', { method: 'POST', body: JSON.stringify(reports) }).then((r) => r.json()).catch(() => ({})) : {};
+    room.phase = 'lobby';
+    await this.save();
+    const after = Object.fromEntries(room.roster.filter((p) => updated[p.pid]).map((p) => [p.id, { ...updated[p.pid], delta: deltas[p.id] }]));
+    for (const w of this.ctx.getWebSockets()) { const a = w.deserializeAttachment(); if (after[a?.id]) w.serializeAttachment({ ...a, mmr: after[a.id].mmr, games: after[a.id].games }); }
+    this.send({ t: 'end', win, ranked, hp: room.hp, stats: room.stats, after });
+    await this.lobby();
+  }
+  async onAlarm() {
+    const room = await this.room();
+    if (room.phase === 'play' && Date.now() >= room.at + MATCH_MS) return this.end(room);
+  }
+  async onClose(ws) {
+    const me = ws.deserializeAttachment();
+    const room = await this.room();
+    if (me?.name) this.send({ t: 'left', id: me.id }, ws);
+    const left = this.players(ws);
+    if (!left.length) {
+      if (room.code) await this.hub({ code: room.code, close: true });
+      this.r = null;
+      await this.ctx.storage.deleteAll();
+      return;
+    }
+    if (room.phase === 'lobby') return this.lobby(ws);
+    if (room.phase === 'play' && room.hp?.[me?.id] > 0) { // leaving = KO (rage-quitting still loses)
+      room.hp[me.id] = 0;
+      this.send({ t: 'ko', id: me.id, by: null });
+      if (this.decided(room)) return this.end(room);
+      await this.save();
     }
   }
 }

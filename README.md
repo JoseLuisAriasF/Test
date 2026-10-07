@@ -105,6 +105,23 @@ mistakes and timeouts drain power and your animatronic walks to your desk. 12 AM
   wins (5 hearts, max 15 min). The server times the finishes; bots are computed from the seed on both sides.
 - Prompts, bots and round rules are pure functions in `src/lib/typer.js`, shared by the browser and the Worker.
 
+## Blox Chase (`/chase/`, guide at `/chase/guide/`)
+
+Grand Chase-style 2D PvP brawler (original characters) drawn as a cinematic 2.5D three.js stage with the player's avatar
+in a costume per hero. 10 classes (`src/lib/chase.js`): Kael (Nightblade, Stormfang), Valdren (Eternal), Shin (Staff Monk,
+Flame Fist, Spirit Master), Sylra (Archer, Twin Bow, Arc Cannon), Aldric (Runeblade). Every class has exactly 33 stat points
+and its own dash (Shadow Step, Flash Step, Demon Step, Rocket Dash…); `npm test` checks the stat budget, combo DPS and skill
+damage spreads, the tricks (Korean dash, aim jump, counter, dashes) and runs CPU vs CPU on every matchup and map.
+- **Rooms** like the classic: 1v1, 2v2, 3v3 or free for all (6). The `Chase` Durable Object instance `lobby` lists open rooms.
+- **Netcode**: each browser simulates its own fighter at 60 Hz (no input lag) and reports ~20/s (only when it changes);
+  others are drawn 90 ms in the past, interpolated. The attacker claims hits; the server checks move + reach from both last
+  positions, invulnerability and a damage bucket, owns the HP and decides KOs/winner.
+- **Ranked MMR + medals** (Stone → Mythic, 5 stars, after 5 calibration games): Elo between every pair of opponents, scaled by
+  how trusted the opponent's rating is (an account with 1 game is worth 10%), nothing between players on the same network.
+- **Practice**: free training (no opponent, infinite MP, input display), training dummy, CPU easy/normal/hard.
+- **Guide**: every trick is a live demo run by the real engine with a scripted input track (one WebGL renderer for all demos).
+- ~720 Durable Object requests per 3-minute 1v1 (messages bill 20:1), so the free plan covers ~100 fights/day.
+
 ## Costs
 
 | Part | Plan | Limit |
