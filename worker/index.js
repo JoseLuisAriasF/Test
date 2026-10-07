@@ -803,7 +803,14 @@ export class Chase extends DurableObject {
   }
   serial(fn) { const run = (this.chain ?? Promise.resolve()).then(fn, fn); this.chain = run.catch(() => {}); return run; }
   fetch(req) { return this.serial(() => this.onFetch(req)); }
-  webSocketMessage(ws, raw) { return this.serial(() => this.onMessage(ws, raw)); }
+  webSocketMessage(ws, raw) {
+    // Position ('s') and projectile ('pr') relays are pure fan-out with no persisted
+    // state, so run them immediately instead of queuing behind the serial chain (and
+    // behind a hit's storage write) — that head-of-line wait was the main server-side
+    // lag. Everything else stays serialized so room state stays correctly ordered.
+    if (this.r?.phase === 'play' && typeof raw === 'string' && (raw.startsWith('{"t":"s",') || raw.startsWith('{"t":"pr"'))) return this.onMessage(ws, raw);
+    return this.serial(() => this.onMessage(ws, raw));
+  }
   webSocketClose(ws) { return this.serial(() => this.onClose(ws)); }
   alarm() { return this.serial(() => this.onAlarm()); }
 
@@ -926,7 +933,7 @@ export class Chase extends DurableObject {
       this.send({ t: 'ko', id: to, by: me.id });
       if (this.decided(room)) return this.end(room);
     }
-    await this.save();
+    this.save(); // fire-and-forget: room.hp is already updated in memory; don't stall the next hit on storage I/O
   }
 
   // the fight is over when one fighter (or one team) is left
