@@ -428,8 +428,15 @@ export function step(f, inp, map, foes = []) {
     if (f.g) f.vx *= 0.85;
   } else if (f.st === 'down') {
     f.vx *= 0.8;
-    if (f.t >= 40) { f.st = 'up'; f.t = 0; }
+    // Nakbup (break-fall tech): tap Jump in the first ~12 frames after you hit the floor to
+    // spring straight back up instead of lying there the full ~70f. Hold ←/→ to roll that way.
+    // You stay invulnerable through the short recovery (the 'up' state is i-frames), so it's a
+    // real wake-up escape from okizeme — the core defensive read that made GC PvP competitive.
+    // The counter is to bait it and meaty the roll's recovery, so knockdowns are still a mind-game.
+    if (f.t >= 3 && f.t <= 12 && (press & (KEY.J | KEY.U))) { Object.assign(f, { st: 'up', t: 22, vx: dir * 0.55, vy: 0, combo: 0, fall: false }); ev.push('tech'); }
+    else if (f.t >= 40) { f.st = 'up'; f.t = 0; }
   } else if (f.st === 'up') {
+    f.vx *= 0.86;
     if (f.t >= 30) { f.st = 'idle'; f.t = 0; }
   } else if (f.st === 'dead') f.vx *= f.g ? 0.8 : 0.98;
 
@@ -556,6 +563,7 @@ export function cpuInput(me, foe, lvl = 1) {
   const toward = dx > 0 ? KEY.R : KEY.L, away = dx > 0 ? KEY.L : KEY.R;
   let b = 0;
   if (me.st === 'hit') return me.mp >= 100 && r < 0.03 * lvl ? KEY.X : 0;
+  if (me.st === 'down') return me.t >= 3 && me.t <= 12 && r < 0.3 * lvl ? KEY.J | (r < 0.5 ? away : toward) : 0; // break-fall tech out of okizeme
   if (me.st === 'move') return me.clk % 4 < 2 && r < 0.5 + 0.2 * lvl ? KEY.A : 0; // keep the combo going
   const zr = c.moves.z1.hit[0] ? c.moves.z1.hit[0].box[0] + c.moves.z1.hit[0].box[2] : 3;
   const want = c.ranged ? 12 : zr - 0.4;

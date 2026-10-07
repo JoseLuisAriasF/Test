@@ -110,6 +110,10 @@ export const DEMOS: Record<string, Demo> = {
   platforms: { id: 'platforms', map: 3, actors: [
     { ch: 'shin4', x: -14, face: 1, script: [[20, 0, 'Triple jump to the top'], [2, U, '↑'], [12, R], [2, U, '↑ again'], [12, R], [2, U, '↑ third jump'], [40, 0], [2, D | U, '↓ + ↑: drop through'], [30, 0], [2, D | U, '↓ + ↑'], [60, 0]] },
   ] },
+  nakbup: { id: 'nakbup', map: 0, actors: [
+    { ch: 'ald3', x: 0, face: -1, script: [[66, 0, 'Comboed and knocked down…'], ...rep(16, [[2, U, 'Jump the instant you land → break-fall!'], [4, 0]] as Step[]), [60, 0]] },
+    { ch: 'kael4', x: -4, face: 1, script: [[20, 0], [2, A], [5, 0], [2, A], [5, 0], [2, A], [5, 0], [2, A, 'launcher → knockdown'], [160, 0]] },
+  ] },
 };
 
 // ---------- runtime ----------

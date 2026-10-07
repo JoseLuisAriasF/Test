@@ -91,6 +91,16 @@ for (const id of ['kael3', 'shin3']) {
   assert.ok(v.st === 'down' && isInv(v));
   run(v, 0, 80);
   assert.equal(v.st, 'idle');
+  // Nakbup: tap jump in the window just after hitting the floor -> break-fall out fast and invulnerable
+  const nb = newFighter('n', 'ald3', 0);
+  applyHit(nb, CHARS.kael3.moves.z4.hit[0], 1);
+  for (let i = 0; i < 90 && nb.st !== 'down'; i++) step(nb, 0, map);
+  assert.equal(nb.st, 'down', 'knocked down');
+  step(nb, 0, map); step(nb, 0, map); step(nb, 0, map); // into the break-fall window (t>=3)
+  const teched = step(nb, KEY.J, map).includes('tech');
+  assert.ok(teched && nb.st === 'up' && isInv(nb), 'break-fall techs out of the knockdown');
+  run(nb, 0, 12);
+  assert.equal(nb.st, 'idle', 'recovers fast after a break-fall');
   const tank = newFighter('t', 'val4', 0);
   run(tank, (i) => (i < 2 ? KEY.A : 0), 2);
   tank.st = 'move'; tank.mv = 'z4'; tank.t = 5;

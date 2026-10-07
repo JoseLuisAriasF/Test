@@ -16,7 +16,7 @@ const write = (k: string, v: unknown) => { try { localStorage.setItem('bc-' + k,
 const ICON: Record<string, string> = { daggers: '🗡️', claws: '🦅', nodachi: '⚡', greatsword: '⚔️', staff: '🥢', gauntlets: '🔥', spirit: '☯️', bow: '🏹', twinbow: '🎯', cannon: '💥', runesword: '🔷' };
 const TEAM_COL = ['', '#ff4d5e', '#3c8cff'];
 const SKILL_KEYS: [string, string][] = [['s1', 'A'], ['s2', 'S'], ['s3', 'D']];
-const TECH: Record<string, string> = { rocket: 'Rocket', shadow: 'Shadow Step', mushidon: 'Mushidon', guan: 'Guan Step', vortex: 'Vortex Step' };
+const TECH: Record<string, string> = { rocket: 'Rocket', shadow: 'Shadow Step', mushidon: 'Mushidon', guan: 'Guan Step', vortex: 'Vortex Step', tech: 'Break-fall!' };
 const SKILL_ICON: Record<string, string> = {
   'Phantom Cut': '🌑', 'Shadow Shuriken': '✴️', 'Void Execution': '💀', 'Chakram Storm': '🌀', 'Thunder Dive': '⚡', 'Storm Cyclone': '🌪️',
   'Rage Cleave': '🩸', 'Earth Sunder': '🌋', 'Blade of Eternity': '⚔️', 'Staff Vault': '🦘', 'Whirlwind Staff': '💫', 'Thousand Strikes': '👊',
@@ -72,6 +72,7 @@ const sfx = (k: string) => {
   else if (k === 'beep') snd.note(660, 660, 0.12, 'square', 0.05);
   else if (k === 'go') snd.note(880, 1760, 0.3, 'square', 0.06);
   else if (k === 'land' || k === 'thud') snd.noise(0.07, k === 'thud' ? 0.12 : 0.04, 300);
+  else if (k === 'tech') { snd.noise(0.14, 0.05, 2000, 0, 0.7, 'bandpass'); snd.note(520, 780, 0.12, 'triangle', 0.04); }
 };
 $('bc-mute').onclick = () => { $('bc-mute').textContent = snd.toggle() ? '🔇' : '🔊'; };
 $('bc-mute').textContent = snd.muted ? '🔇' : '🔊';
