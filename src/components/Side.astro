@@ -1,5 +1,5 @@
 ---
-import { fmt, full, related, date } from '../lib/data.js';
+import { fmt, full, related, date, hasCodes } from '../lib/data.js';
 const { g } = Astro.props;
 const h = g.history ?? [];
 const max = Math.max(...h.map((p) => p[1]), 1);
@@ -21,7 +21,7 @@ const pts = h.map((p, i) => `${(i / Math.max(h.length - 1, 1)) * 300},${88 - (p[
     <h2 style="font-size:1rem">Players also like</h2>
     <div class="rows" style="margin-top:12px">
       {related(g, 6).map((r, i) => (
-        <a class="row inset" href={`/${i % 2 === 0 ? 'codes' : 'games'}/${r.slug}/`} style="padding:8px">
+        <a class="row inset" href={`/${i % 2 === 0 && hasCodes(r) ? 'codes' : 'games'}/${r.slug}/`} style="padding:8px">
           <img src={r.icon} alt="" width="40" height="40" style="width:40px;height:40px" loading="lazy" />
           <div class="grow"><b style="font-size:14px">{r.title}</b><span class="small muted">{r.codes.active.length} codes · {fmt(r.playing)} playing</span></div>
         </a>

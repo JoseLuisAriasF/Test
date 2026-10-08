@@ -1,0 +1,33 @@
+---
+import Base from '../../layouts/Base.astro';
+import { games, monthYear, date, updatedAt, checkedAt } from '../../lib/data.js';
+
+const DAY = 864e5;
+const all = games.flatMap((g) => g.codes.active.filter((c) => c.added).map((c) => ({ ...c, g }))).sort((a, b) => b.added.localeCompare(a.added));
+const week = all.filter((c) => updatedAt - new Date(c.added) < 7 * DAY);
+// Never let the page go empty on a slow week: fall back to the latest finds.
+const list = week.length >= 5 ? week : all.slice(0, 30);
+const title = week.length >= 5 ? `${week.length} new this week` : 'latest finds';
+const schema = [{ '@context': 'https://schema.org', '@type': 'ItemList', name: `New Roblox codes (${monthYear})`, numberOfItems: list.length, itemListElement: list.slice(0, 30).map((c, i) => ({ '@type': 'ListItem', position: i + 1, url: new URL(`/codes/${c.g.slug}/`, Astro.site).href, name: `${c.g.title}: ${c.code}` })) }];
+---
+<Base
+  title={`New Roblox Codes (${monthYear}): ${title}`}
+  description={`The newest working Roblox codes, found in the last days and checked every 2 hours: ${list.slice(0, 3).map((c) => `${c.g.title} ${c.code}`).join(', ')} and more. Updated ${checkedAt}.`}
+  schema={schema}
+>
+  <section class="hero">
+    <span class="pill">Checked {checkedAt}</span>
+    <h1>New Roblox codes ({monthYear})</h1>
+    <p>Every code we found most recently, newest first. Tap a game to copy its codes. Want them in your reader? <a href="/rss.xml">Subscribe to the RSS feed</a>.</p>
+  </section>
+  <div class="rows">
+    {list.map((c) => (
+      <a class="row neu" href={`/codes/${c.g.slug}/`}>
+        <img src={c.g.icon} alt="" width="48" height="48" loading="lazy" />
+        <div class="grow"><b>{c.code}</b><span class="small muted">{c.g.title} · {c.reward}</span></div>
+        <span class="tag green">{date(c.added)}</span>
+      </a>
+    ))}
+  </div>
+  <p class="small muted" style="margin-top:20px"><a href="/codes/">Browse all codes by game →</a></p>
+</Base>

@@ -37,7 +37,7 @@ const schema = [{
       <span>💯 <b>100%</b> free</span>
     </div>
     {newToday.length > 0 && (
-      <div class="banner">✨ <span><b>{newToday.length} new codes</b> in the last 3 days for {[...new Set(newToday.map((c) => c.g.title))].slice(0, 3).join(', ')}</span> <a href="/codes/">See them →</a></div>
+      <div class="banner">✨ <span><b>{newToday.length} new codes</b> in the last 3 days for {[...new Set(newToday.map((c) => c.g.title))].slice(0, 3).join(', ')}</span> <a href="/codes/new/">See them →</a></div>
     )}
   </section>
 
