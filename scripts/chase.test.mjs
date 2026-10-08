@@ -64,11 +64,16 @@ for (const id of ['kael3', 'shin3']) {
 
 // Blink is invulnerable, aim jump floats the archer, aiming tilts the arrow
 {
-  const k = newFighter('k', 'kael3', 0);
+  const k = newFighter('k', 'shin4', 0); // Spirit Step still teleports (kael3 is now a fast travel dash)
   step(k, KEY.K, map); step(k, 0, map);
   assert.ok(isInv(k));
   run(k, 0, 3);
-  assert.ok(k.x > 8, 'blinked forward');
+  assert.ok(k.x > 5, 'blinked forward');
+  const da = newFighter('d', 'kael3', 0); // Dark Assassin dash is a fast single-step travel dash, invulnerable at the start
+  step(da, KEY.K, map); step(da, 0, map);
+  assert.ok(isInv(da));
+  run(da, 0, 9);
+  assert.ok(da.x > 8, 'phantom dash crosses ground fast');
   const air = newFighter('s', 'syl1', 0), fall = newFighter('t', 'syl1', 0);
   const shots = [];
   run(air, (i) => (i < 2 ? KEY.U : i > 20 && i % 12 < 2 ? KEY.A | (i > 40 ? KEY.D : 0) : 0), 60);
@@ -91,6 +96,16 @@ for (const id of ['kael3', 'shin3']) {
   assert.ok(v.st === 'down' && isInv(v));
   run(v, 0, 80);
   assert.equal(v.st, 'idle');
+  // Nakbup: tap jump in the window just after hitting the floor -> break-fall out fast and invulnerable
+  const nb = newFighter('n', 'ald3', 0);
+  applyHit(nb, CHARS.kael3.moves.z4.hit[0], 1);
+  for (let i = 0; i < 90 && nb.st !== 'down'; i++) step(nb, 0, map);
+  assert.equal(nb.st, 'down', 'knocked down');
+  step(nb, 0, map); step(nb, 0, map); step(nb, 0, map); // into the break-fall window (t>=3)
+  const teched = step(nb, KEY.J, map).includes('tech');
+  assert.ok(teched && nb.st === 'up' && isInv(nb), 'break-fall techs out of the knockdown');
+  run(nb, 0, 12);
+  assert.equal(nb.st, 'idle', 'recovers fast after a break-fall');
   const tank = newFighter('t', 'val4', 0);
   run(tank, (i) => (i < 2 ? KEY.A : 0), 2);
   tank.st = 'move'; tank.mv = 'z4'; tank.t = 5;

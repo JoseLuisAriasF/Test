@@ -1,6 +1,6 @@
 // Blox Chase: Grand Chase-style PvP with Roblox-style fighters. Rooms like the classic: create one (1v1, 2v2, 3v3,
 // free for all), friends join, everyone picks a fighter, the host starts. Your own fighter runs locally at 60 Hz
-// (zero input lag); the others are drawn ~90 ms in the past, interpolated between their reports, so they move smoothly.
+// (zero input lag); the others are drawn ~70 ms in the past, interpolated between their reports, so they move smoothly.
 // Hits are claimed here and confirmed by the server, which owns the HP (worker/index.js, class Chase).
 import { CHARS, CHAR_IDS, MAPS, MODES, KEY, TICK, MATCH_MS, MP_MAX, TIERS, STAT_NAMES, newFighter, step, activeHits, stepProj, projRect, hurtbox, overlap, isInv,
   applyHit, gainMp, landedHit, veilMul, damage, hitData, localHits, cpuInput, snap, unsnap, medalOf, medalSVG, blinkDist, chargeLevel, CALIBRATION, MMR_START } from '../lib/chase.js';
@@ -16,7 +16,7 @@ const write = (k: string, v: unknown) => { try { localStorage.setItem('bc-' + k,
 const ICON: Record<string, string> = { daggers: '🗡️', claws: '🦅', nodachi: '⚡', greatsword: '⚔️', staff: '🥢', gauntlets: '🔥', spirit: '☯️', bow: '🏹', twinbow: '🎯', cannon: '💥', runesword: '🔷' };
 const TEAM_COL = ['', '#ff4d5e', '#3c8cff'];
 const SKILL_KEYS: [string, string][] = [['s1', 'A'], ['s2', 'S'], ['s3', 'D']];
-const TECH: Record<string, string> = { rocket: 'Rocket', shadow: 'Shadow Step', mushidon: 'Mushidon', guan: 'Guan Step', vortex: 'Vortex Step' };
+const TECH: Record<string, string> = { rocket: 'Rocket', shadow: 'Shadow Step', mushidon: 'Mushidon', guan: 'Guan Step', vortex: 'Vortex Step', tech: 'Break-fall!' };
 const SKILL_ICON: Record<string, string> = {
   'Phantom Cut': '🌑', 'Shadow Shuriken': '✴️', 'Void Execution': '💀', 'Chakram Storm': '🌀', 'Thunder Dive': '⚡', 'Storm Cyclone': '🌪️',
   'Rage Cleave': '🩸', 'Earth Sunder': '🌋', 'Blade of Eternity': '⚔️', 'Staff Vault': '🦘', 'Whirlwind Staff': '💫', 'Thousand Strikes': '👊',
@@ -72,6 +72,7 @@ const sfx = (k: string) => {
   else if (k === 'beep') snd.note(660, 660, 0.12, 'square', 0.05);
   else if (k === 'go') snd.note(880, 1760, 0.3, 'square', 0.06);
   else if (k === 'land' || k === 'thud') snd.noise(0.07, k === 'thud' ? 0.12 : 0.04, 300);
+  else if (k === 'tech') { snd.noise(0.14, 0.05, 2000, 0, 0.7, 'bandpass'); snd.note(520, 780, 0.12, 'triangle', 0.04); }
 };
 $('bc-mute').onclick = () => { $('bc-mute').textContent = snd.toggle() ? '🔇' : '🔊'; };
 $('bc-mute').textContent = snd.muted ? '🔇' : '🔊';
@@ -535,8 +536,10 @@ async function startOnline(m: any) {
   matchMs = MATCH_MS;
   countdown(performance.now() + (m.at - m.now));
 }
-// remote fighters are drawn 90 ms in the past, between the two reports around that moment
-const DELAY = 90;
+// Remote fighters are drawn ~70 ms in the past, interpolated between the two reports
+// around that moment. At ~30 reports/s that's still 2+ reports of buffer (smooth),
+// while cutting perceived opponent latency vs the old 90 ms.
+const DELAY = 70;
 function remoteState(r: Remote, now: number) {
   if (r.dead) { r.f.st = 'dead'; return r.f; }
   const t = now - DELAY, b = r.buf;
@@ -591,7 +594,7 @@ function onlineTick(now: number) {
   }
   // my report: 20 per second, skipped while nothing changes
   const s = snap(me), key = s.join(',');
-  if (ws?.readyState === 1 && now - lastSent > 48 && (key !== lastSnap || now - lastSent > 400)) { ws.send(JSON.stringify({ t: 's', s })); lastSent = now; lastSnap = key; }
+  if (ws?.readyState === 1 && now - lastSent > 33 && (key !== lastSnap || now - lastSent > 400)) { ws.send(JSON.stringify({ t: 's', s })); lastSent = now; lastSnap = key; }
 }
 
 // ---------- menus ----------

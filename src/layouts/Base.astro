@@ -6,9 +6,10 @@ const { title, description, image, schema = [], noindex = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
 const orgId = `${Astro.site}#org`;
+const siteId = `${Astro.site}#website`;
 const ld = [
-  { '@context': 'https://schema.org', '@type': 'Organization', '@id': orgId, name: SITE_NAME, url: Astro.site, logo: `${Astro.site}favicon.svg` },
-  { '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_NAME, url: Astro.site, publisher: { '@id': orgId }, potentialAction: { '@type': 'SearchAction', target: { '@type': 'EntryPoint', urlTemplate: `${Astro.site}codes/?q={search_term_string}` }, 'query-input': 'required name=search_term_string' } },
+  { '@context': 'https://schema.org', '@type': 'Organization', '@id': orgId, name: SITE_NAME, url: Astro.site, logo: `${Astro.site}favicon.svg`, description: `${SITE_NAME} tracks working Roblox redeem codes and game guides for 190+ games, refreshed every 2 hours from public Roblox data and cross-checked against trusted gaming sources.` },
+  { '@context': 'https://schema.org', '@type': 'WebSite', '@id': siteId, name: SITE_NAME, url: Astro.site, publisher: { '@id': orgId }, potentialAction: { '@type': 'SearchAction', target: { '@type': 'EntryPoint', urlTemplate: `${Astro.site}codes/?q={search_term_string}` }, 'query-input': 'required name=search_term_string' } },
   ...schema,
 ].filter(Boolean);
 ---

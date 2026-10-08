@@ -35,13 +35,14 @@ const schema = [
 <Base
   title="Roblox Giftcodes - Free Gift Codes for 100+ Games [2026 Updated]"
   description="5000+ working Roblox giftcodes for Blox Fruits, Adopt Me, Brookhaven RP + 100 more games. Free rewards. Updated every 2 hours. Copy-paste in-game."
+  image={top[0]?.thumbs?.[0] ?? top[0]?.icon}
   schema={schema}
 >
   <section class="hero" style="padding-bottom:10px">
     <span class="floaty" style="left:4%;top:30px" aria-hidden="true">🎁</span>
     <span class="floaty" style="right:6%;top:60px;animation-delay:-2s" aria-hidden="true">💎</span>
     <h1>Free Roblox Giftcodes [2026]</h1>
-    <p>5000+ working giftcodes for 100+ Roblox games. Copy-paste. Get free rewards: money, XP, pets, skins. Updated every 2 hours, 100% verified.</p>
+    <p>5000+ working giftcodes for 100+ Roblox games. Copy-paste. Get free rewards: money, XP, pets, skins. Updated every 2 hours, cross-checked across trusted sources.</p>
     <div class="stats">
       <span>🎁 <b>{games.reduce((s, g) => s + g.codes.active.length, 0)}</b> active giftcodes</span>
       <span>🎮 <b>{topGamesByGiftcodes.length}</b> games with codes</span>
@@ -107,7 +108,7 @@ const schema = [
     <h3>Why Use Bibibox Giftcodes?</h3>
     <ul>
       <li>🔄 Updated every 2 hours (fastest refresh)</li>
-      <li>✅ 100% verified - We test every giftcode before posting</li>
+      <li>✅ Cross-checked - every giftcode is confirmed across several trusted sources before we post it</li>
       <li>📊 Coverage - 100+ games, 5000+ codes</li>
       <li>🚀 Easy to use - One-click copy, organized by game</li>
       <li>💰 FREE - No premium, no hidden fees</li>

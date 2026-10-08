@@ -69,7 +69,7 @@ export const DEMOS: Record<string, Demo> = {
     { ch: 'ald3', x: 14, face: -1, dummy: true, script: [[200, 0]] },
   ] },
   blink: { id: 'blink', map: 2, actors: [
-    { ch: 'kael3', x: -4, face: 1, script: [[34, 0, 'Wait for the attack…'], [2, K | R, '→→: blink through it (invulnerable)'], [14, 0], [2, L, 'turn around'], [4, 0], [2, A, 'punish from behind'], [6, 0], [2, A], [6, 0], [2, A], [9, 0], [2, A], [60, 0]] },
+    { ch: 'shin4', x: -4, face: 1, script: [[34, 0, 'Wait for the attack…'], [2, K | R, '→→: teleport through it (invulnerable)'], [14, 0], [2, L, 'turn around'], [4, 0], [2, A, 'punish from behind'], [6, 0], [2, A], [6, 0], [2, A], [9, 0], [2, A], [60, 0]] },
     { ch: 'val4', x: 2, face: -1, script: [[24, 0], [2, A], [9, 0], [2, A], [9, 0], [2, A], [11, 0], [2, A], [80, 0]] },
   ] },
   flash: { id: 'flash', map: 1, actors: [
@@ -99,6 +99,10 @@ export const DEMOS: Record<string, Demo> = {
     { ch: 'shin2', x: -8, face: 1, script: [[20, 0, 'Combo into the launcher'], [2, A], [7, 0], [2, A], [8, 0], [2, A], [9, 0], [2, A, 'launch!'], [16, 0], [2, U | R, 'jump after them'], [8, R], [2, A, 'Z in the air'], [22, 0], [2, S1, 'A: finish with a skill'], [70, 0]] },
     { ch: 'syl4', x: -4, face: -1, dummy: true, script: [[220, 0]] },
   ] },
+  airlock: { id: 'airlock', map: 1, actors: [
+    { ch: 'kael3', x: -6, face: 1, script: [[18, 0, 'Launch them first'], [2, A], [5, 0], [2, A], [5, 0], [2, A], [7, 0], [2, A, 'launcher'], [8, 0], [2, U | R, '↑ jump after them'], [5, R], [2, K | R, '→→ air-dash through'], [3, R], [2, A | R, 'Z: hook — air lock'], [6, R], [2, K | R, '→→ again'], [3, R], [2, A | R, 'Z'], [50, 0]] },
+    { ch: 'ald3', x: -2, face: -1, dummy: true, script: [[220, 0]] },
+  ] },
   counter: { id: 'counter', map: 2, actors: [
     { ch: 'ald3', x: 0, face: -1, script: [[42, 0, 'Caught in a combo?'], [2, X, 'C: counter (1 MP bar)'], [24, 0, 'free + invulnerable'], [2, L, ''], [4, 0], [2, A, 'punish'], [7, 0], [2, A], [7, 0], [2, A], [60, 0]] },
     { ch: 'kael4', x: -4, face: 1, script: [[20, 0], [2, A], [5, 0], [2, A], [5, 0], [2, A], [5, 0], [2, A], [5, 0], [2, A], [100, 0]] },
@@ -109,6 +113,10 @@ export const DEMOS: Record<string, Demo> = {
   ] },
   platforms: { id: 'platforms', map: 3, actors: [
     { ch: 'shin4', x: -14, face: 1, script: [[20, 0, 'Triple jump to the top'], [2, U, '↑'], [12, R], [2, U, '↑ again'], [12, R], [2, U, '↑ third jump'], [40, 0], [2, D | U, '↓ + ↑: drop through'], [30, 0], [2, D | U, '↓ + ↑'], [60, 0]] },
+  ] },
+  nakbup: { id: 'nakbup', map: 0, actors: [
+    { ch: 'ald3', x: 0, face: -1, script: [[66, 0, 'Comboed and knocked down…'], ...rep(16, [[2, U, 'Jump the instant you land → break-fall!'], [4, 0]] as Step[]), [60, 0]] },
+    { ch: 'kael4', x: -4, face: 1, script: [[20, 0], [2, A], [5, 0], [2, A], [5, 0], [2, A], [5, 0], [2, A, 'launcher → knockdown'], [160, 0]] },
   ] },
 };
 

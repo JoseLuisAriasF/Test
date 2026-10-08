@@ -51,15 +51,18 @@ const RAW = {
   // dash-cancels (Korean dash), Lothus air hooks, Illusion/Vortex steps, a super jump and invisibility.
   kael3: {
     hero: 'Kael', cls: 'Nightblade', tier: 3, col: '#8b5cf6', glow: '#c4b5fd', weapon: 'claws', stats: [4, 6, 3, 9, 6, 5],
-    dash: { name: 'Phantom Blink', blink: 9, frames: 12, air: 1, inv: [0, 8] }, airJumps: 1, stall: 0, kdash: true, rocket: [0.78, 0.48], jump: 1.22,
-    desc: 'Lass-style assassin: blinks next to you, Korean dash, Lothus air hooks, Illusion and Vortex steps, a super jump and invisibility. Low HP.',
-    tricks: ['Korean dash', 'Lothus', 'Illusion Step', 'Vortex Step', 'Flash Step'],
+    // Dark Assassin of the classic: ONE fast single-step dash (no double ground dash), relentless Korean-dash
+    // pressure, and the Air Lock — in the air, mash dash + Z to air-dash through the enemy and juggle (2 air dashes).
+    dash: { name: 'Phantom Dash', speed: 1.15, frames: 10, air: 2, inv: [0, 6] }, airJumps: 1, stall: 0, kdash: true, rocket: [0.78, 0.48], jump: 1.22,
+    desc: 'Lass-style Dark Assassin: one fast single-step dash, relentless Korean-dash pressure, the Air Lock (air-dash + Z juggle), Lothus hooks, Illusion and Vortex steps and invisibility. Low HP, highest skill ceiling.',
+    tricks: ['Korean dash', 'Air Lock', 'Lothus', 'Illusion Step', 'Vortex Step'],
     moves: {
       z1: M(14, { anim: 'claw', vx: [[1, 4, 0.2]], hit: [H(4, 6, 26, 0, 1.4, 3.3, 2.6, 0.12, 0, 16)], next: 'z2', cw: 6, cancel: 5 }),
       z2: M(14, { anim: 'claw2', vx: [[1, 4, 0.2]], hit: [H(4, 6, 26, 0, 1.2, 3.3, 2.6, 0.12, 0, 16)], next: 'z3', cw: 6, cancel: 5 }),
       z3: M(18, { anim: 'spin', hit: [H(3, 5, 18, -0.5, 1, 4, 3.2, 0.1, 0, 16), H(8, 10, 18, -0.5, 1, 4, 3.2, 0.12, 0, 16)], next: 'z4', cw: 10, cancel: 6 }),
       z4: M(26, { anim: 'upper', hit: [H(6, 9, 44, 0, 0.5, 3.4, 4.6, 0.2, 0.66, 30, 'L')], cancel: 10 }),
-      da: M(18, { anim: 'thrust', vx: [[0, 10, 0.5]], hit: [H(2, 9, 30, 0, 1, 3, 3, 0.35, 0.2, 18)], cancel: 4 }),
+      // DA dash attack: two quick claws then a backflip kick that launches — the long-reaching opener into infinites.
+      da: M(24, { anim: 'thrust', vx: [[0, 5, 0.5]], hit: [H(2, 5, 22, 0, 1.3, 3.2, 2.6, 0.12, 0, 15), H(7, 10, 22, 0, 1.3, 3.2, 2.6, 0.12, 0, 15), H(13, 17, 42, 0, 0.4, 3.4, 4.8, 0.5, 0.55, 26, 'L')], cancel: 5 }),
       // Lothus: rocket, then Z + → , Z + → … each air slash dashes forward and HOOKS the enemy, carrying them with you;
       // every hook that lands gives the air slash back, so you keep flying (5-12 hits). ← + Z turns and throws them back.
       ja: M(14, { anim: 'claw', air: true, airChain: 4, turn: true, landEnd: true, grav: 0.15, vx: [[0, 9, 0.72]], vy: [[0, 0.1]], hit: [{ ...H(1, 9, 22, -0.5, 0.2, 3.8, 4.2, 0.72, 0.1, 22), carry: true }], next: 'ja', cw: 6, cancel: 6 }),
@@ -428,8 +431,15 @@ export function step(f, inp, map, foes = []) {
     if (f.g) f.vx *= 0.85;
   } else if (f.st === 'down') {
     f.vx *= 0.8;
-    if (f.t >= 40) { f.st = 'up'; f.t = 0; }
+    // Nakbup (break-fall tech): tap Jump in the first ~12 frames after you hit the floor to
+    // spring straight back up instead of lying there the full ~70f. Hold ←/→ to roll that way.
+    // You stay invulnerable through the short recovery (the 'up' state is i-frames), so it's a
+    // real wake-up escape from okizeme — the core defensive read that made GC PvP competitive.
+    // The counter is to bait it and meaty the roll's recovery, so knockdowns are still a mind-game.
+    if (f.t >= 3 && f.t <= 12 && (press & (KEY.J | KEY.U))) { Object.assign(f, { st: 'up', t: 22, vx: dir * 0.55, vy: 0, combo: 0, fall: false }); ev.push('tech'); }
+    else if (f.t >= 40) { f.st = 'up'; f.t = 0; }
   } else if (f.st === 'up') {
+    f.vx *= 0.86;
     if (f.t >= 30) { f.st = 'idle'; f.t = 0; }
   } else if (f.st === 'dead') f.vx *= f.g ? 0.8 : 0.98;
 
@@ -556,6 +566,7 @@ export function cpuInput(me, foe, lvl = 1) {
   const toward = dx > 0 ? KEY.R : KEY.L, away = dx > 0 ? KEY.L : KEY.R;
   let b = 0;
   if (me.st === 'hit') return me.mp >= 100 && r < 0.03 * lvl ? KEY.X : 0;
+  if (me.st === 'down') return me.t >= 3 && me.t <= 12 && r < 0.3 * lvl ? KEY.J | (r < 0.5 ? away : toward) : 0; // break-fall tech out of okizeme
   if (me.st === 'move') return me.clk % 4 < 2 && r < 0.5 + 0.2 * lvl ? KEY.A : 0; // keep the combo going
   const zr = c.moves.z1.hit[0] ? c.moves.z1.hit[0].box[0] + c.moves.z1.hit[0].box[2] : 3;
   const want = c.ranged ? 12 : zr - 0.4;

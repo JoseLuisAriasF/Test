@@ -2,7 +2,11 @@
 import Base from '../../layouts/Base.astro';
 import GameHeader from '../../components/GameHeader.astro';
 import Side from '../../components/Side.astro';
+<<<<<<< HEAD
 import { games, monthYear, date, isNew, updatedAt, ratingLD, hasCodes, checkedAt } from '../../lib/data.js';
+=======
+import { games, monthYear, date, isNew, updatedAt, ratingLD, SITE_NAME } from '../../lib/data.js';
+>>>>>>> 66dc65f7c4a089e7b41d0a4ab48ff009acf81a64
 
 export const getStaticPaths = () => games.map((g) => ({ params: { slug: g.slug }, props: { g } }));
 const { g } = Astro.props;
@@ -20,20 +24,31 @@ const howToSteps = [
   'Paste a code from the list above into the text box.',
   'Press Redeem / Enter and enjoy your free rewards!',
 ];
+// Honest per-page freshness: when this game's codes last changed (latest code
+// added), falling back to the game's own last Roblox update.
+const lastChanged = active.map((c) => c.added).filter(Boolean).sort().pop() ?? g.updated;
+const pageUrl = new URL(`/codes/${g.slug}/`, Astro.site).href;
 const schema = [
+  { '@context': 'https://schema.org', '@type': 'WebPage', '@id': `${pageUrl}#webpage`, url: pageUrl, name: `${g.title} Giftcodes & Redeem Codes`, isPartOf: { '@id': `${Astro.site}#website` }, dateModified: new Date(lastChanged).toISOString(), author: { '@type': 'Organization', name: SITE_NAME, url: Astro.site.href }, publisher: { '@id': `${Astro.site}#org` } },
   { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
   { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [['Home', '/'], ['Codes', '/codes/'], [`${g.title} Giftcodes`, `/codes/${g.slug}/`]].map(([name, p], i) => ({ '@type': 'ListItem', position: i + 1, name, item: new URL(p, Astro.site).href })) },
   { '@context': 'https://schema.org', '@type': 'WebPage', name: `${g.title} Codes`, url: new URL(`/codes/${g.slug}/`, Astro.site).href, dateModified: updatedAt.toISOString(), about: { '@type': 'VideoGame', name: g.title } },
   { '@context': 'https://schema.org', '@type': 'HowTo', name: `How to Redeem ${g.title} Giftcodes`, step: howToSteps.map((t, i) => ({ '@type': 'HowToStep', position: i + 1, text: t })), totalTime: 'PT1M' },
-  ratingLD(g) && { '@context': 'https://schema.org', '@type': 'VideoGame', name: g.title, url: new URL(`/codes/${g.slug}/`, Astro.site).href, image: g.icon, applicationCategory: 'Game', sameAs: `https://www.roblox.com/games/${g.placeId}`, aggregateRating: ratingLD(g) },
+  ratingLD(g) && { '@context': 'https://schema.org', '@type': 'VideoGame', name: g.title, url: pageUrl, image: g.icon, applicationCategory: 'Game', sameAs: `https://www.roblox.com/games/${g.placeId}`, aggregateRating: ratingLD(g) },
 ];
 ---
 <Base
+<<<<<<< HEAD
   title={`${g.title} Codes (${monthYear}): ${n ? `${n} Working Giftcode${n === 1 ? '' : 's'}` : 'New Giftcodes & How to Redeem'}`}
   noindex={!hasCodes(g)}
   description={n ? `${n} working ${g.title} giftcodes + redeem codes for ${monthYear}. Free ${active[0].reward.toLowerCase()}: ${active.slice(0, 3).map((c) => c.code).join(', ')} + more. Copy-paste in-game. 💰 Updated every 2 hours.` : `${g.title} giftcodes & redeem codes 2026 - new free codes checked hourly. How to redeem + full expired list.`}
+=======
+  title={`${g.title} Giftcodes & Redeem Codes - ${n ? `${n} FREE [Working]` : `New Codes [${new Date().getFullYear()}]`}`}
+  description={n ? `${n} working ${g.title} giftcodes + redeem codes for ${monthYear}. Free ${active[0].reward.toLowerCase()}: ${active.slice(0, 3).map((c) => c.code).join(', ')} + more. Copy-paste in-game. 💰 Updated every 2 hours.` : `${g.title} giftcodes & redeem codes 2026 - new free codes checked every 2 hours. How to redeem + full expired list.`}
+>>>>>>> 66dc65f7c4a089e7b41d0a4ab48ff009acf81a64
   image={g.thumbs[0] ?? g.icon}
   schema={schema}
+  noindex={n === 0}
 >
   <GameHeader g={g} page="codes" h1={`${g.title} Codes [${monthYear}]: Giftcodes & Redeem Codes`} sub={`✅ ${n} active · ⏰ Checked ${checkedAt} · ❌ ${expired.length} expired`} />
 
