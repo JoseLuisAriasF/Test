@@ -5,11 +5,7 @@ const list = games.filter(hasCodes).sort((a, b) => newCodes(b) - newCodes(a) || 
 const total = games.reduce((s, g) => s + g.codes.active.length, 0);
 const schema = [{ '@context': 'https://schema.org', '@type': 'ItemList', name: `All Roblox Codes (${monthYear})`, numberOfItems: list.length, itemListElement: list.slice(0, 30).map((g, i) => ({ '@type': 'ListItem', position: i + 1, url: `https://bibibox.xyz/codes/${g.slug}/`, name: `${g.title} Codes` })) }];
 ---
-<<<<<<< HEAD
-<Base title={`ALL Roblox Codes (${monthYear}) - ${total} FREE Redeem Codes`} description={`Every working Roblox redeem code & gift code for ${monthYear}: ${total} codes across ${list.length} top games! Copy-paste them before they expire. Updated every 2 hours.`} schema={schema}>
-=======
-<Base title={`ALL Roblox Codes (${monthYear}) - ${total} FREE Redeem Codes`} description={`Every working Roblox redeem code & gift code for ${monthYear}: ${total} codes across ${games.length} top games! Copy-paste them before they expire. Updated every 2 hours.`} image={list[0]?.thumbs?.[0] ?? list[0]?.icon} schema={schema}>
->>>>>>> 66dc65f7c4a089e7b41d0a4ab48ff009acf81a64
+<Base title={`ALL Roblox Codes (${monthYear}) - ${total} FREE Redeem Codes`} description={`Every working Roblox redeem code & gift code for ${monthYear}: ${total} codes across ${list.length} top games! Copy-paste them before they expire. Updated every 2 hours.`} image={list[0]?.thumbs?.[0] ?? list[0]?.icon} schema={schema}>
   <section class="hero">
     <span class="pill">Updated every 2 hours</span>
     <h1>All Roblox codes ({monthYear})</h1>
