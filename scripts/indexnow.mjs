@@ -11,7 +11,7 @@ const codeSet = (g) => (g?.codes.active ?? []).map((c) => c.code).sort().join('|
 // URLs whose active codes differ between two snapshots (new game, new or removed code).
 export function changedUrls(oldDb, newDb) {
   const slugs = Object.entries(newDb.games)
-    .filter(([id, g]) => codeSet(g) !== codeSet(oldDb.games[id]) && g.codes.active.length + g.codes.expired.length > 0)
+    .filter(([id, g]) => codeSet(g) !== codeSet(oldDb.games[id]) && g.codes.active.length > 0)
     .map(([, g]) => `/codes/${g.slug}/`);
   return slugs.length ? ['/', '/codes/', '/codes/new/', ...slugs] : [];
 }

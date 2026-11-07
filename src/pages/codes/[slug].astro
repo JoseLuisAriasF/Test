@@ -2,11 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import GameHeader from '../../components/GameHeader.astro';
 import Side from '../../components/Side.astro';
-<<<<<<< HEAD
-import { games, monthYear, date, isNew, updatedAt, ratingLD, hasCodes, checkedAt } from '../../lib/data.js';
-=======
-import { games, monthYear, date, isNew, updatedAt, ratingLD, SITE_NAME } from '../../lib/data.js';
->>>>>>> 66dc65f7c4a089e7b41d0a4ab48ff009acf81a64
+import { games, monthYear, date, isNew, updatedAt, ratingLD, SITE_NAME, checkedAt } from '../../lib/data.js';
 
 export const getStaticPaths = () => games.map((g) => ({ params: { slug: g.slug }, props: { g } }));
 const { g } = Astro.props;
@@ -32,20 +28,13 @@ const schema = [
   { '@context': 'https://schema.org', '@type': 'WebPage', '@id': `${pageUrl}#webpage`, url: pageUrl, name: `${g.title} Giftcodes & Redeem Codes`, isPartOf: { '@id': `${Astro.site}#website` }, dateModified: new Date(lastChanged).toISOString(), author: { '@type': 'Organization', name: SITE_NAME, url: Astro.site.href }, publisher: { '@id': `${Astro.site}#org` } },
   { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
   { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [['Home', '/'], ['Codes', '/codes/'], [`${g.title} Giftcodes`, `/codes/${g.slug}/`]].map(([name, p], i) => ({ '@type': 'ListItem', position: i + 1, name, item: new URL(p, Astro.site).href })) },
-  { '@context': 'https://schema.org', '@type': 'WebPage', name: `${g.title} Codes`, url: new URL(`/codes/${g.slug}/`, Astro.site).href, dateModified: updatedAt.toISOString(), about: { '@type': 'VideoGame', name: g.title } },
   { '@context': 'https://schema.org', '@type': 'HowTo', name: `How to Redeem ${g.title} Giftcodes`, step: howToSteps.map((t, i) => ({ '@type': 'HowToStep', position: i + 1, text: t })), totalTime: 'PT1M' },
   ratingLD(g) && { '@context': 'https://schema.org', '@type': 'VideoGame', name: g.title, url: pageUrl, image: g.icon, applicationCategory: 'Game', sameAs: `https://www.roblox.com/games/${g.placeId}`, aggregateRating: ratingLD(g) },
 ];
 ---
 <Base
-<<<<<<< HEAD
   title={`${g.title} Codes (${monthYear}): ${n ? `${n} Working Giftcode${n === 1 ? '' : 's'}` : 'New Giftcodes & How to Redeem'}`}
-  noindex={!hasCodes(g)}
-  description={n ? `${n} working ${g.title} giftcodes + redeem codes for ${monthYear}. Free ${active[0].reward.toLowerCase()}: ${active.slice(0, 3).map((c) => c.code).join(', ')} + more. Copy-paste in-game. 💰 Updated every 2 hours.` : `${g.title} giftcodes & redeem codes 2026 - new free codes checked hourly. How to redeem + full expired list.`}
-=======
-  title={`${g.title} Giftcodes & Redeem Codes - ${n ? `${n} FREE [Working]` : `New Codes [${new Date().getFullYear()}]`}`}
-  description={n ? `${n} working ${g.title} giftcodes + redeem codes for ${monthYear}. Free ${active[0].reward.toLowerCase()}: ${active.slice(0, 3).map((c) => c.code).join(', ')} + more. Copy-paste in-game. 💰 Updated every 2 hours.` : `${g.title} giftcodes & redeem codes 2026 - new free codes checked every 2 hours. How to redeem + full expired list.`}
->>>>>>> 66dc65f7c4a089e7b41d0a4ab48ff009acf81a64
+  description={n ? `${n} working ${g.title} codes, gift codes & redeem codes for ${monthYear}. Free ${active[0].reward.toLowerCase()}: ${active.slice(0, 3).map((c) => c.code).join(', ')} + more. Copy-paste in-game. 💰 Updated every 2 hours.` : `${g.title} codes, gift codes & redeem codes 2026 - new free codes checked hourly. How to redeem + full expired list.`}
   image={g.thumbs[0] ?? g.icon}
   schema={schema}
   noindex={n === 0}
@@ -55,7 +44,7 @@ const schema = [
   <div class="layout" style="margin-top:28px">
     <div style="display:grid;gap:24px;min-width:0">
       <div class="neu box" id="active">
-        <h2>✅ Working {g.title} Giftcodes & Redeem Codes</h2>
+        <h2>✅ Working {g.title} Codes, Gift Codes & Redeem Codes</h2>
         {n > 0 && <div style="margin:-4px 0 16px"><span class="small">🏆 Code Hunter: you copied <b data-got>0</b> of {n} free giftcodes</span><div class="progress"><i data-bar></i></div></div>}
         {n ? (
           <div class="rows">

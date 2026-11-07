@@ -35,9 +35,9 @@ export const stars = (g) => Math.round((g.up / (g.up + g.down || 1)) * 50) / 10;
 export const ratingLD = (g) => (stars(g) >= 1 ? { '@type': 'AggregateRating', ratingValue: stars(g), bestRating: 5, ratingCount: votes(g) } : null);
 export const isNew = (c) => !!c.added && updatedAt - new Date(c.added) < 3 * DAY;
 export const newCodes = (g) => g.codes.active.filter(isNew).length;
-// A /codes/ page with no active and no expired codes is empty: noindex it and keep it out of the sitemap
+// A /codes/ page with no active codes is thin: noindex it and keep it out of the sitemap
 // so Google spends its crawl budget on pages that have something to say.
-export const hasCodes = (g) => g.codes.active.length + g.codes.expired.length > 0;
+export const hasCodes = (g) => g.codes.active.length > 0;
 export const checkedAt = `${updatedAt.toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })} UTC`;
 export const slugOf = (s) => s.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 export const genres = Object.entries(Object.groupBy(games, (g) => g.genre)).sort((a, b) => b[1].length - a[1].length);
